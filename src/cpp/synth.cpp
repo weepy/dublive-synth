@@ -119,10 +119,17 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
         }
     }
     
-    // Process filter in-place
+    // Process bitcrusher before filter
+    float bitcrushAmount = properties["bitcrushAmount"];
+    float sampleReduction = properties["sampleReduction"];
+    
+    if (bitcrushAmount > 0.0f || sampleReduction > 0.0f) {
+        processBitcrusher(oscillatorOutput.data(), bufferSize, bitcrushAmount, sampleReduction);
+    }
+    
+    // Process filter after bitcrusher
     processFilter(oscillatorOutput.data(), bufferSize, modulatedCutoff);
     
-
     float ampEnvLevel = ampEnv.process(deltaTime);
     float ampEnvIncrement = (ampEnvLevel - lastAmpEnvLevel) / bufferSize;
     
@@ -240,6 +247,13 @@ void Synth::noteOn(int m, float vel, int fromMidiNote) {
     stateTime = 0.0f;
     
     portamentoTime = properties["portamento"];
+    
+    // Reset LFO phase if retrigger is enabled
+    if (properties["lfoRetrigger"] > 0.5f) {
+        lfoPhase = 0.0f;
+        lfoValue = 0.0f;
+        lastLfoPhase = 0.0f;
+    }
     
     // Calculate target frequencies with offsets
     targetFreq1 = std::pow(2.0f, 
@@ -359,4 +373,27 @@ float Synth::processNoise(float deltaTime, float color) {
     
     
     return noiseLowpassOutput;
+}
+
+void Synth::processBitcrusher(float* input, int numSamples, float bitcrushAmount, float sampleReduction) {
+    // Bit depth reduction (1.0 = 1 bit, 0.0 = full bit depth)
+    float levels = std::pow(2.0f, std::floor((1.0f - bitcrushAmount) * 16.0f));
+    
+    // Sample rate reduction (decimation)
+    int skipSamples = std::max(1, static_cast<int>(sampleReduction * 50.0f));
+    float holdValue = 0.0f;
+    
+    for (int i = 0; i < numSamples; ++i) {
+        // Sample rate reduction
+        if (i % skipSamples == 0) {
+            holdValue = input[i];
+        } else {
+            input[i] = holdValue;
+        }
+        
+        // Bit depth reduction
+        if (bitcrushAmount > 0.0f) {
+            input[i] = std::floor(input[i] * levels) / levels;
+        }
+    }
 } 

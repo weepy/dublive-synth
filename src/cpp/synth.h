@@ -264,6 +264,8 @@ private:
     float stateTime = 0.0f;  // Replace both noiseTime and portamentoStartTime
 
     uint32_t noise_counter = 0;  // Simple counter for noise
+
+    void processBitcrusher(float* input, int numSamples, float bitcrushAmount, float sampleReduction);
 };
 
 #endif 

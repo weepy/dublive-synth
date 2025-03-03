@@ -5,6 +5,11 @@ class SynthProcessor extends AudioWorkletProcessor {
         const mod = new Module();
         this.synth = new mod.PolySynth(44100, 16);
         this.mod = mod;  // Store the module instance
+        
+        // Pre-allocate the buffer memory once, using standard audio buffer size of 128
+        this.outputPtr = this.mod._malloc(128 * 4);
+        this.outputHeap = new Float32Array(this.mod.HEAPF32.buffer, this.outputPtr, 128);
+        
         this.port.onmessage = (e) => {
             if (e.data.type === 'noteon') {
                 this.synth.noteOn(e.data.key, e.data.v);
@@ -27,16 +32,17 @@ class SynthProcessor extends AudioWorkletProcessor {
     
     process(inputs, outputs) {
         const output = outputs[0][0];
-        const outputPtr = this.mod._malloc(output.length * 4);
-        const outputHeap = new Float32Array(this.mod.HEAPF32.buffer, outputPtr, output.length);
-        
-        this.synth.processBuffer(outputPtr, output.length);
-        
-        output.set(outputHeap);
-        
-        this.mod._free(outputPtr);
-        
+        this.synth.processBuffer(this.outputPtr, 128);
+        output.set(this.outputHeap);
         return true;
+    }
+    
+    disconnect() {
+        if (this.outputPtr) {
+            this.mod._free(this.outputPtr);
+            this.outputPtr = null;
+            this.outputHeap = null;
+        }
     }
 }
 

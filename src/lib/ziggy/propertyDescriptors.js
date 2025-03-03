@@ -242,6 +242,13 @@ export const propertyDescriptors = [
         options: ["Triangle", "Sawtooth", "Square", "Sample & Hold", "Sine"]
     },
     {
+        name: "lfoRetrigger",
+        type: "toggle",
+        value: 0,
+        group: 'lfo',
+        options: ["Off", "On"]
+    },
+    {
         name: "lfoRate",
         type: "range",
         value: 0.5,
@@ -328,5 +335,25 @@ export const propertyDescriptors = [
         step: 0.001,
         type: 'range',
         group: 'noise'
+    },
+
+    // Effects
+    {
+        name: 'bitcrushAmount',
+        value: 0,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        type: 'range',
+        group: 'effects'
+    },
+    {
+        name: 'sampleReduction',
+        value: 0,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        type: 'range',
+        group: 'effects'
     }
 ];
