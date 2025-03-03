@@ -1,5 +1,6 @@
 <script>
     import { onMount } from 'svelte';
+    import Keyboard from '$lib/components/Keyboard.svelte';
 
     import ziggyWaves from '$lib/ziggy/waves.json';
 
@@ -18,7 +19,7 @@
     let synthNode;
 
     // Track active keys
-    let activeKeys = new Set();
+    // let activeKeys = new Set();
 
     import { propertyDescriptors } from "$lib/ziggy/propertyDescriptors.js"
 
@@ -65,107 +66,6 @@
         
         localStorage.setItem('currentPreset', JSON.stringify(currentPreset));
     }
-
-    const keyboardLayout = [
-        { note: 60, key: 'Z', type: 'white' },
-        { note: 61, key: 'S', type: 'black' },
-        { note: 62, key: 'X', type: 'white' },
-        { note: 63, key: 'D', type: 'black' },
-        { note: 64, key: 'C', type: 'white' },
-        { note: 65, key: 'V', type: 'white' },
-        { note: 66, key: 'G', type: 'black' },
-        { note: 67, key: 'B', type: 'white' },
-        { note: 68, key: 'H', type: 'black' },
-        { note: 69, key: 'N', type: 'white' },
-        { note: 70, key: 'J', type: 'black' },
-        { note: 71, key: 'M', type: 'white' },
-    ];
-
-    // Watch for parameter changes and update synth
-    // $: if (synthNode && waveform !== undefined) {
-    //     // sendWavetable(waveform);
-    //     synthNode.port.postMessage({
-    //         type: 'properties',
-    //         properties: {
-    //             wavetable: waveform,
-    //             cutoff,
-    //             resonance,
-    //             attack,
-    //             decay,
-    //             sustain,
-    //             release
-    //         }
-    //     });
-    // }
-
-    function handleNoteOn(note, keyElement) {
-        synthNode.port.postMessage({ type: 'noteon', key: note, v: 1 });
-        keyElement.style.background = keyElement.classList.contains('black-key') ? '#333' : '#ddd';
-        activeKeys.add(note);
-    }
-
-    function handleNoteOff(note, keyElement) {
-        synthNode.port.postMessage({ type: 'noteoff', key: note });
-        keyElement.style.background = keyElement.classList.contains('black-key') ? 'black' : 'white';
-        activeKeys.delete(note);
-    }
-
-    function handleKeyDown(e) {
-        const key = keyboardLayout.find(k => k.key === e.key.toUpperCase());
-        if (key && !e.repeat && !activeKeys.has(key.note)) {
-            const keyElement = document.querySelector(`[data-note="${key.note}"]`);
-            if (keyElement) {
-                handleNoteOn(key.note, keyElement);
-            }
-        }
-    }
-
-    function handleKeyUp(e) {
-        const key = keyboardLayout.find(k => k.key === e.key.toUpperCase());
-        if (key) {
-            const keyElement = document.querySelector(`[data-note="${key.note}"]`);
-            if (keyElement) {
-                handleNoteOff(key.note, keyElement);
-            }
-        }
-    }
-
-    async function init() {
-        try {
-            audioContext = new AudioContext();
-            await audioContext.audioWorklet.addModule("/worklets/synth_worklet.js");
-            synthNode = new AudioWorkletNode(audioContext, 'synth-processor');
-            synthNode.connect(audioContext.destination);
-
-            if (audioContext.state === 'suspended') {
-                await audioContext.resume();
-            }
-            
-            // Send initial parameters
-            synthNode.port.postMessage({
-                type: 'properties',
-                properties: currentPreset
-            });
-        } catch (error) {
-            console.error('Init error:', error);
-        }
-    }
-
-    async function togglePlay() {
-        if (!audioContext) {
-            await init();
-        }
-        isPlaying = !isPlaying;
-        if (isPlaying) {
-            await audioContext.resume();
-        } else {
-            await audioContext.suspend();
-        }
-    }
-
-    onMount(() => {
-        init();
-    });
 
     // Add a cache for loaded wavetables
     let wavetableCache = new Map();
@@ -224,6 +124,55 @@
             table: wavetable
         }, [wavetable.buffer]);
     }
+
+    function handleNoteOn(note, keyElement) {
+        synthNode.port.postMessage({ type: 'noteon', key: note, v: 1 });
+        keyElement.style.background = keyElement.classList.contains('black-key') ? '#333' : '#ddd';
+        // activeKeys.add(note);
+    }
+
+    function handleNoteOff(note, keyElement) {
+        synthNode.port.postMessage({ type: 'noteoff', key: note });
+        keyElement.style.background = keyElement.classList.contains('black-key') ? 'black' : 'white';
+        // activeKeys.delete(note);
+    }
+
+    async function init() {
+        try {
+            audioContext = new AudioContext();
+            await audioContext.audioWorklet.addModule("/worklets/synth_worklet.js");
+            synthNode = new AudioWorkletNode(audioContext, 'synth-processor');
+            synthNode.connect(audioContext.destination);
+
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+            
+            // Send initial parameters
+            synthNode.port.postMessage({
+                type: 'properties',
+                properties: currentPreset
+            });
+        } catch (error) {
+            console.error('Init error:', error);
+        }
+    }
+
+    async function togglePlay() {
+        if (!audioContext) {
+            await init();
+        }
+        isPlaying = !isPlaying;
+        if (isPlaying) {
+            await audioContext.resume();
+        } else {
+            await audioContext.suspend();
+        }
+    }
+
+    onMount(() => {
+        init();
+    });
 </script>
 
 <div class="controls">
@@ -282,21 +231,11 @@
     {/each}
 </div>
 
-<div class="keyboard">
-    {#each keyboardLayout as { note, key, type }}
-        <div
-            class="key {type === 'black' ? 'black-key' : ''}"
-            data-note={note}
-            on:mousedown={(e) => handleNoteOn(note, e.currentTarget)}
-            on:mouseup={(e) => handleNoteOff(note, e.currentTarget)}
-            on:mouseleave={(e) => activeKeys.has(note) && handleNoteOff(note, e.currentTarget)}
-        >
-            {key}
-        </div>
-    {/each}
-</div>
-
-<svelte:window on:keydown={handleKeyDown} on:keyup={handleKeyUp} />
+<Keyboard 
+    onNoteOn={handleNoteOn}
+    onNoteOff={handleNoteOff}
+    
+/>
 
 <style>
     .keyboard {
