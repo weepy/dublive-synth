@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>WebAssembly Synth</title>
+    <style>
+        .keyboard {
+            display: flex;
+            justify-content: center;
+            margin: 20px;
+            position: relative;
+        }
+        .key {
+            width: 40px;
+            height: 120px;
+            border: 1px solid black;
+            background: white;
+            margin: 0 2px;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 10px;
+        }
+        .black-key {
+            width: 30px;
+            height: 80px;
+            background: black;
+            position: relative;
+            margin-left: -15px;
+            margin-right: -15px;
+            z-index: 1;
+            color: white;
+        }
+        .controls {
+            text-align: center;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    
+    
+    <div class="keyboard" id="keyboard"></div>
+
+    <script type="module">
+        import Module from './synth.js';
+
+        let synth;
+        let audioContext;
+
+        async function init() {
+            try {
+                const instance = await Module();
+                console.log('WASM module initialized');
+                initializeSynth(instance);
+            } catch (e) {
+                console.error('Failed to initialize WASM module:', e);
+            }
+        }
+
+        function initializeSynth(module) {
+            audioContext = new AudioContext();
+            synth = new module.Synth(audioContext.sampleRate);
+            
+            // Create an audio worklet
+            const scriptContent = `
+                class SynthProcessor extends AudioWorkletProcessor {
+                    constructor() {
+                        super();
+                        this.port.onmessage = (e) => {
+                            if (e.data.type === 'init') {
+                                this.synth = e.data.synth;
+                            }
+                        };
+                    }
+                    
+                    process(inputs, outputs) {
+                        const output = outputs[0][0];
+                        for (let i = 0; i < output.length; i++) {
+                            output[i] = this.synth.process();
+                        }
+                        return true;
+                    }
+                }
+                registerProcessor('synth-processor', SynthProcessor);
+            `;
+
+            const blob = new Blob([scriptContent], { type: 'application/javascript' });
+            const workletUrl = URL.createObjectURL(blob);
+
+            // Set up audio processing
+            async function initAudio() {
+                await audioContext.audioWorklet.addModule(workletUrl);
+                const synthNode = new AudioWorkletNode(audioContext, 'synth-processor');
+                synthNode.port.postMessage({ type: 'init', synth: synth });
+                synthNode.connect(audioContext.destination);
+            }
+
+            // Create keyboard
+            const keyboardLayout = [
+                { note: 60, key: 'Z', type: 'white' },
+                { note: 61, key: 'S', type: 'black' },
+                { note: 62, key: 'X', type: 'white' },
+                { note: 63, key: 'D', type: 'black' },
+                { note: 64, key: 'C', type: 'white' },
+                { note: 65, key: 'V', type: 'white' },
+                { note: 66, key: 'G', type: 'black' },
+                { note: 67, key: 'B', type: 'white' },
+                { note: 68, key: 'H', type: 'black' },
+                { note: 69, key: 'N', type: 'white' },
+                { note: 70, key: 'J', type: 'black' },
+                { note: 71, key: 'M', type: 'white' },
+            ];
+
+            const keyboard = document.getElementById('keyboard');
+            keyboardLayout.forEach(({ note, key, type }) => {
+                const keyElement = document.createElement('div');
+                keyElement.className = `key ${type === 'black' ? 'black-key' : ''}`;
+                keyElement.textContent = key;
+                keyElement.dataset.note = note;
+                keyboard.appendChild(keyElement);
+            });
+
+            // Handle mouse/touch events
+            keyboard.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('key')) {
+                    const note = parseInt(e.target.dataset.note);
+                    synth.noteOn(note, 1.0);
+                    e.target.style.background = e.target.classList.contains('black-key') ? '#333' : '#ddd';
+                }
+            });
+
+            keyboard.addEventListener('mouseup', (e) => {
+                if (e.target.classList.contains('key')) {
+                    synth.noteOff();
+                    e.target.style.background = e.target.classList.contains('black-key') ? 'black' : 'white';
+                }
+            });
+
+            // Handle keyboard events
+            const keyToNote = new Map(keyboardLayout.map(({ note, key }) => [key, note]));
+            document.addEventListener('keydown', (e) => {
+                const note = keyToNote.get(e.key.toUpperCase());
+                if (note && !e.repeat) {
+                    synth.noteOn(note, 1.0);
+                    const key = keyboard.children[keyboardLayout.findIndex(k => k.note === note)];
+                    key.style.background = key.classList.contains('black-key') ? '#333' : '#ddd';
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                const note = keyToNote.get(e.key.toUpperCase());
+                if (note) {
+                    synth.noteOff();
+                    const key = keyboard.children[keyboardLayout.findIndex(k => k.note === note)];
+                    key.style.background = key.classList.contains('black-key') ? 'black' : 'white';
+                }
+            });
+
+            // Handle controls
+            // document.getElementById('waveform').addEventListener('change', (e) => {
+            //     synth.setWaveform(parseInt(e.target.value));
+            // });
+
+            // document.getElementById('cutoff').addEventListener('input', (e) => {
+            //     synth.setFilterCutoff(parseFloat(e.target.value));
+            // });
+
+            // document.getElementById('resonance').addEventListener('input', (e) => {
+            //     synth.setFilterResonance(parseFloat(e.target.value) / 100);
+            // });
+
+            // Initialize audio
+            initAudio().catch(console.error);
+        }
+
+        init();
+    </script>
+</body>
+</html> 
