@@ -1,6 +1,8 @@
 <script>
     import { onMount } from 'svelte';
 
+    import ziggyWaves from '$lib/ziggy/waves.json';
+
     let synth;
     let audioContext;
     let isPlaying = false;
@@ -45,15 +47,23 @@
     });
     
 
-    // Add this reactive statement after the currentPreset declaration
+    // Update the reactive statement to handle wavetable changes
     $: if (synthNode && currentPreset) {
+        // Send wavetable if it's a wavetable property
+        const wavetableProps = propertyDescriptors.filter(p => p.type === 'wave');
+        for (const prop of wavetableProps) {
+            if (currentPreset[prop.name]) {
+                sendWavetable(currentPreset[prop.name]);
+            }
+        }
+
+        // Send other properties
         synthNode.port.postMessage({
             type: 'properties',
             properties: currentPreset
         });
-
         
-        localStorage.setItem('currentPreset', JSON.stringify(currentPreset))
+        localStorage.setItem('currentPreset', JSON.stringify(currentPreset));
     }
 
     const keyboardLayout = [
@@ -130,12 +140,7 @@
             if (audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
-
-            // Load all wavetables
-            for (let i = 0; i < 3; i++) {
-                sendWavetable(i);
-            }
-
+            
             // Send initial parameters
             synthNode.port.postMessage({
                 type: 'properties',
@@ -162,38 +167,58 @@
         init();
     });
 
-    // Update the sendWavetable function
-    function generateWavetable(type) {
-        const size = 2048;
-        const wavetable = new Float32Array(size);
-        
-        for (let i = 0; i < size; i++) {
-            const phase = (i / size) * Math.PI * 2;
-            
-            switch (type) {
-                case 0: // Sine
-                    wavetable[i] = Math.sin(phase);
-                    break;
-                case 1: // Square
-                    wavetable[i] = phase < Math.PI ? 1.0 : -1.0;
-                    break;
-                case 2: // Saw
-                    wavetable[i] = 1.0 - (2.0 * (phase / (Math.PI * 2)));
-                    break;
-                default:
-                    wavetable[i] = Math.sin(phase);
-            }
+    // Add a cache for loaded wavetables
+    let wavetableCache = new Map();
+
+    // Function to load and decode audio file
+    async function loadWavetableFromUrl(url) {
+        if (wavetableCache.has(url)) {
+            return wavetableCache.get(url);
         }
+
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+        // Convert audio buffer to wavetable (using first channel)
+        const wavetable = new Float32Array(2048);
+        const data = audioBuffer.getChannelData(0);
+        
+        // Resample to 2048 points
+        for (let i = 0; i < 2048; i++) {
+            const index = Math.floor((i / 2048) * data.length);
+            wavetable[i] = data[index];
+        }
+        
+        wavetableCache.set(url, wavetable);
         return wavetable;
     }
 
-    function sendWavetable(type) {
+    // function intFromStr(str) {
+    //     let hash = 0;
+    //     for (let i = 0; i < str.length; i++) {
+    //         const char = str.charCodeAt(i);
+    //         hash = (hash << 5) - hash + char;
+    //         hash |= 0; // Convert to 32bit integer
+    //     }
+    //     return ziggyWaves.indexOf(str);
+    // }
+    // Update the sendWavetable function
+    async function sendWavetable(index) {
         if (!synthNode) return;
         
-        const wavetable = generateWavetable(type);
+        let url = ziggyWaves[index] || ziggyWaves[0];
+
+        if(!url) {
+            url = ziggyWaves[0];
+            index = 0
+        }
+
+        let wavetable = await loadWavetableFromUrl(url);
+        
         synthNode.port.postMessage({
             type: 'loadwavetable',
-            key: type,  // Use the waveform type as the key
+            key: index,
             table: wavetable
         }, [wavetable.buffer]);
     }
@@ -203,6 +228,7 @@
     <button class="play-button" on:click={togglePlay}>
         {isPlaying ? 'Stop' : 'Play'}
     </button>
+    
 
     {#each [...new Set(propertyDescriptors.map(p => p.group))] as group}
         <div class="control-group">
@@ -236,6 +262,14 @@
                             <select bind:value={currentPreset[prop.name]}>
                                 {#each prop.options as option, index}
                                     <option value={index}>{option}</option>
+                                {/each}
+                            </select>
+                        {:else if prop.type == 'wave'}
+                            <select bind:value={currentPreset[prop.name]}>
+                                {#each prop.options as option, index}
+                                    <option value={index}>
+                                        {option.split('/').pop().replace('.L.ogg', '')}
+                                    </option>
                                 {/each}
                             </select>
                         {/if}

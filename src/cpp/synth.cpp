@@ -53,12 +53,12 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
         case 2: // FM
             fmAmount += lfoMod * fmAmount;
             break;
-        case 3: // Phase
+        case 3: // Mix
+            mix += lfoMod;
+            break;
+        case 4: // Phase
             phaseOffset1 += lfoMod;
             phaseOffset2 += lfoMod;
-            break;
-        case 4: // Mix
-            mix += lfoMod;
             break;
     }
 
@@ -67,19 +67,30 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
 
     
     
-    int phaseMode1 = int(properties["phaseMode1"]);
-    int phaseMode2 = int(properties["phaseMode2"]);
+    int phaseMode1 = 0;//int(properties["phaseMode1"]);
+    int phaseMode2 = 0;//int(properties["phaseMode2"]);
     
     mix = std::clamp(mix, 0.0f, 1.0f);
 
     float noiseEnabled = properties["noiseEnabled"];
-
     
-
+    float osc2Enabled = properties["osc2Enabled"];
+    
     // Process main oscillators
     for (int i = 0; i < bufferSize; ++i) {
-        float osc1 = processOscillator(wave1, phaseOffset1, phaseMode1, freq1, phase1);
-        float osc2 = processOscillator(wave2, phaseOffset2, phaseMode2, freq2, phase2);
+        float osc2 = 0.0f;
+        
+        float modulated_freq1 = freq1;
+
+        // Only process osc2 if enabled
+        if (osc2Enabled > 0.5f) {
+            osc2 = processOscillator(wave2, phaseOffset2, phaseMode2, freq2, phase2);
+            modulated_freq1 *= (1.0f + osc2 * fmAmount);
+        }
+        
+        float osc1 = processOscillator(wave1, phaseOffset1, phaseMode1, modulated_freq1, phase1);
+        
+        // Mix oscillators (osc2 will be 0 if disabled)
         oscillatorOutput[i] = osc1 * (1.0f - mix) + osc2 * mix;
     }
     

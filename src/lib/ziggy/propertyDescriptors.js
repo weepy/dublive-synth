@@ -1,11 +1,13 @@
+import ziggyWaves from './waves.json';
+
 export const propertyDescriptors = [
     // OSC 1
     {
         name: 'wave1',
-        value: 0,
-        type: 'select',
+        value: 'basic/sine.wav',
+        type: 'wave',
         group: 'osc1',
-        options: ['Sine', 'Square', 'Saw']
+        options: ziggyWaves
     },
     {
         name: 'oct1',
@@ -32,30 +34,30 @@ export const propertyDescriptors = [
         max: 100,
         step: 1,
     },
-    {
-        name: 'phaseOffset1',
-        value: 0,
-        min: 0,
-        max: 1,
-        step: 0.001,
-        group: 'osc1',
-        type: 'range'
-    },
-    {
-        name: 'phaseMode1',
-        value: 0,
-        type: 'select',
-        group: 'osc1',
-        options: ['Off', 'Subtraction', 'Multiplication']
-    },
+    // {
+    //     name: 'phaseOffset1',
+    //     value: 0,
+    //     min: 0,
+    //     max: 1,
+    //     step: 0.001,
+    //     group: 'osc1',
+    //     type: 'range'
+    // },
+    // {
+    //     name: 'phaseMode1',
+    //     value: 0,
+    //     type: 'select',
+    //     group: 'osc1',
+    //     options: ['Off', 'Subtraction', 'Multiplication']
+    // },
 
     // OSC 2
     {
         name: 'wave2',
-        value: 0,
-        type: 'select',
+        value: 'basic/sine.wav',
+        type: 'wave',
         group: 'osc2',
-        options: ['Sine', 'Square', 'Saw']
+        options: ziggyWaves
     },
     {
         name: 'oct2',
@@ -83,21 +85,28 @@ export const propertyDescriptors = [
         step: 1,
     },
     {
-        name: 'phaseOffset2',
-        value: 0,
-        min: 0,
-        max: 1,
-        step: 0.001,
+        name: 'osc2Enabled',
+        value: 1,
+        type: 'toggle',
         group: 'osc2',
-        type: 'range'
+        options: ['Off', 'On']
     },
-    {
-        name: 'phaseMode2',
-        value: 0,
-        type: 'select',
-        group: 'osc2',
-        options: ['Off', 'Subtraction', 'Multiplication']
-    },
+    // {
+    //     name: 'phaseOffset2',
+    //     value: 0,
+    //     min: 0,
+    //     max: 1,
+    //     step: 0.001,
+    //     group: 'osc2',
+    //     type: 'range'
+    // },
+    // {
+    //     name: 'phaseMode2',
+    //     value: 0,
+    //     type: 'select',
+    //     group: 'osc2',
+    //     options: ['Off', 'Subtraction', 'Multiplication']
+    // },
 
     // Mix section
     {
@@ -255,7 +264,7 @@ export const propertyDescriptors = [
         type: "select",
         value: 0,
         group: 'lfo',
-        options: ["Oscillators", "Filter", "FM", "Phase", "Mix"]
+        options: ["Oscillators", "Filter", "FM",  "Mix"]
     },
 
     // Master

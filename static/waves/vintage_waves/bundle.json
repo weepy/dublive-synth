@@ -1,0 +1,30 @@
+{
+    "name": "Vintage Waves",
+    "path": "core/vintage_waves",
+    "files": [
+        "wave/rand1.L.ogg",
+        "wave/rand2.L.ogg",
+        "wave/rand3.L.ogg",
+        "wave/rand4.L.ogg",
+        "wave/rand5.L.ogg",
+        "wave/rand6.L.ogg",
+        "wave/rand7.L.ogg",
+        "wave/rand8.L.ogg",
+        "wave/saw1.L.ogg",
+        "wave/saw2.L.ogg",
+        "wave/saw3.L.ogg",
+        "wave/saw4.L.ogg",
+        "wave/sine1.L.ogg",
+        "wave/sine2.L.ogg",
+        "wave/sine3.L.ogg",
+        "wave/sine4.L.ogg",
+        "wave/square1.L.ogg",
+        "wave/square2.L.ogg",
+        "wave/square3.L.ogg",
+        "wave/square4.L.ogg",
+        "wave/triangle1.L.ogg",
+        "wave/triangle2.L.ogg",
+        "wave/triangle3.L.ogg",
+        "wave/triangle4.L.ogg"
+    ]
+}
