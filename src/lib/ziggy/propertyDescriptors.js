@@ -41,6 +41,13 @@ export const propertyDescriptors = [
         group: 'osc1',
         type: 'range'
     },
+    {
+        name: 'phaseMode1',
+        value: 0,
+        type: 'select',
+        group: 'osc1',
+        options: ['Off', 'Subtraction', 'Multiplication']
+    },
 
     // OSC 2
     {
@@ -83,6 +90,13 @@ export const propertyDescriptors = [
         step: 0.001,
         group: 'osc2',
         type: 'range'
+    },
+    {
+        name: 'phaseMode2',
+        value: 0,
+        type: 'select',
+        group: 'osc2',
+        options: ['Off', 'Subtraction', 'Multiplication']
     },
 
     // Mix section
