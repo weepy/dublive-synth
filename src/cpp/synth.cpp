@@ -380,7 +380,15 @@ float Synth::processLFO(float deltaTime) {
     }
     
     lastLfoPhase = lfoPhase;
-    return lfoValue * properties["lfoAmount"]; // Amount is already 0-1
+
+    // Apply fade-in
+    float fadeInTime = properties["lfoFadeIn"];
+    float fadeInMultiplier = 1.0f;
+    if (fadeInTime > 0.0f) {
+        fadeInMultiplier = std::min(stateTime / fadeInTime, 1.0f);
+    }
+    
+    return lfoValue * properties["lfoAmount"] * fadeInMultiplier;
 }
 
 float Synth::processNoise(float deltaTime, float color) {

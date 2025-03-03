@@ -274,6 +274,15 @@ export const propertyDescriptors = [
         group: 'lfo'
     },
     {
+        name: "lfoFadeIn",
+        type: "range",
+        value: 0,
+        min: 0,
+        max: 2,
+        step: 0.01,
+        group: 'lfo'
+    },
+    {
         name: "lfoDestination",
         type: "select",
         value: 0,
