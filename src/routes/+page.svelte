@@ -170,6 +170,8 @@
     // Add a cache for loaded wavetables
     let wavetableCache = new Map();
 
+    import { decodeAudioDataAny } from "$lib/utils.js"
+
     // Function to load and decode audio file
     async function loadWavetableFromUrl(url) {
         if (wavetableCache.has(url)) {
@@ -178,7 +180,7 @@
 
         const response = await fetch(url);
         const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        const audioBuffer = await decodeAudioDataAny("audio/ogg", arrayBuffer, audioContext);
         
         // Convert audio buffer to wavetable (using first channel)
         const wavetable = new Float32Array(2048);
