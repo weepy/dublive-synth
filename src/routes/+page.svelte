@@ -83,15 +83,29 @@
         const audioBuffer = await decodeAudioDataAny("audio/ogg", arrayBuffer, audioContext);
         
         // Convert audio buffer to wavetable (using first channel)
-        const wavetable = new Float32Array(2048);
+        
         const data = audioBuffer.getChannelData(0);
         
-        // Resample to 2048 points
-        for (let i = 0; i < 2048; i++) {
-            const index = Math.floor((i / 2048) * data.length);
-            wavetable[i] = data[index];
-        }
+        // const wavetable = new Float32Array(2048);
+
+        // // Resample to 2048 points using linear interpolation
+        // for (let i = 0; i < 2048; i++) {
+        //     const position = (i / 2048) * (data.length - 1); // Adjust position calculation
+        //     const index1 = Math.floor(position);
+        //     const index2 = Math.min(index1 + 1, data.length - 1);
+        //     const fraction = position - index1;
+            
+        //     wavetable[i] = (1 - fraction) * data[index1] + fraction * data[index2]; // Clearer lerp formula
+        // }
         
+                
+        const wavetable = new Float32Array(data.length);
+        // Resample to 2048 points
+        for (let i = 0; i < data.length; i++) {
+            // const index = Math.floor((i / 2048) * data.length);
+            wavetable[i] = data[i];
+        }
+
         wavetableCache.set(url, wavetable);
         return wavetable;
     }
@@ -113,7 +127,7 @@
 
         if(!url) {
             url = ziggyWaves[0];
-            index = 0;
+            index = 0
         }
 
         // Skip if we've already sent this wavetable
@@ -126,9 +140,6 @@
             key: index,
             table: wavetable
         }, [wavetable.buffer]);
-
-        // Cache the URL to indicate this wavetable has been sent
-        wavetableCache.set(url, true);
     }
 
     function handleNoteOn(note, keyElement) {

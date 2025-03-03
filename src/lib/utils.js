@@ -1,6 +1,6 @@
 
 let decodeOggDataPolyfill = null
-let nativeDecodeOgg = true
+let nativeDecodeOgg = false
 // import { decodeOggModule } from "./ogg-decode.js"
 
 export async function decodeAudioDataAny(contentType, data, audioContext) {

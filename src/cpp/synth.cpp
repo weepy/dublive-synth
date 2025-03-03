@@ -101,11 +101,11 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
         float noiseColor = properties["noiseColor"];
 
         noiseColor*=noiseColor;
-        noiseDecay*=noiseDecay;
+        noiseDecay*=noiseDecay*noiseDecay*10.f;
         noiseLevel*=noiseLevel;
 
         // Calculate current noise amplitude using exponential decay
-        float currentNoiseAmplitude = std::exp(-stateTime / noiseDecay);
+        float currentNoiseAmplitude = noiseDecay == 10.f ? 1.f : std::exp(-stateTime / noiseDecay);
         
         // Only process noise if the envelope hasn't fully decayed
         if (currentNoiseAmplitude > 0.001f) {  // Small threshold to avoid processing tiny values
@@ -124,7 +124,7 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
     float sampleReduction = properties["sampleReduction"];
     
     if (bitcrushAmount > 0.0f || sampleReduction > 0.0f) {
-        // processBitcrusher(oscillatorOutput.data(), bufferSize, bitcrushAmount, sampleReduction);
+        processBitcrusher(oscillatorOutput.data(), bufferSize, bitcrushAmount, sampleReduction);
     }
     
     // Process filter after bitcrusher
