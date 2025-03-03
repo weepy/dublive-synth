@@ -16,11 +16,11 @@ Synth::Synth(float sampleRate, std::map<float, std::vector<float>>* wavetables)
 
 void Synth::processBuffer(float* buffer, int bufferSize) {
     float deltaTime = bufferSize / sampleRate;
+    stateTime += deltaTime;  // Update state time for every buffer
     
     // Update portamento
     if (portamentoTime > 0.0f) {
-        portamentoStartTime += deltaTime;
-        float t = std::min(portamentoStartTime / portamentoTime, 1.0f);
+        float t = std::min(stateTime / portamentoTime, 1.0f);
         // Exponential interpolation for smoother frequency transitions
         currentFreq1 = currentFreq1 * std::pow(targetFreq1 / currentFreq1, t);
         currentFreq2 = currentFreq2 * std::pow(targetFreq2 / currentFreq2, t);
@@ -72,13 +72,42 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
     
     mix = std::clamp(mix, 0.0f, 1.0f);
 
-    for (int i = 0; i < bufferSize; ++i) {
-        float osc2 = processOscillator(wave2, phaseOffset2, phaseMode2, freq2, phase2);
-        float phaseModulation = osc2 * fmAmount;
-        float osc1 = processOscillator(wave1, phaseOffset1 + phaseModulation, phaseMode1, freq1, phase1);
-        oscillatorOutput[i] = osc1 * mix + osc2 * (1.0f - mix);
-    }
+    float noiseEnabled = properties["noiseEnabled"];
 
+    
+
+    // Process main oscillators
+    for (int i = 0; i < bufferSize; ++i) {
+        float osc1 = processOscillator(wave1, phaseOffset1, phaseMode1, freq1, phase1);
+        float osc2 = processOscillator(wave2, phaseOffset2, phaseMode2, freq2, phase2);
+        oscillatorOutput[i] = osc1 * (1.0f - mix) + osc2 * mix;
+    }
+    
+    // Add noise if enabled
+    if (noiseEnabled > 0.5f) {
+        float noiseLevel = properties["noiseLevel"];
+        float noiseDecay = properties["noiseDecay"];
+        float noiseColor = properties["noiseColor"];
+
+        noiseColor*=noiseColor;
+        noiseDecay*=noiseDecay;
+        noiseLevel*=noiseLevel;
+
+        // Calculate current noise amplitude using exponential decay
+        float currentNoiseAmplitude = std::exp(-stateTime / noiseDecay);
+        
+        // Only process noise if the envelope hasn't fully decayed
+        if (currentNoiseAmplitude > 0.001f) {  // Small threshold to avoid processing tiny values
+            for (int i = 0; i < bufferSize; ++i) {
+                noise_counter = noise_counter * 1664525 + 1013904223;
+                noiseValue = (float)(noise_counter) * (2.0f / (float)4294967295UL) - 1.0f;
+                noiseLowpassOutput = noiseLowpassOutput * (1.0f - noiseColor) + noiseValue * noiseColor;
+                
+                oscillatorOutput[i] += noiseLowpassOutput * noiseLevel * currentNoiseAmplitude;
+            }
+        }
+    }
+    
     // Process filter in-place
     processFilter(oscillatorOutput.data(), bufferSize, modulatedCutoff);
     
@@ -196,8 +225,10 @@ void Synth::noteOn(int m, float vel, int fromMidiNote) {
     isActive = true;
     isAborting = false;
     
+    // Reset state time when note starts
+    stateTime = 0.0f;
+    
     portamentoTime = properties["portamento"];
-    portamentoStartTime = 0.0f;
     
     // Calculate target frequencies with offsets
     targetFreq1 = std::pow(2.0f, 
@@ -310,4 +341,11 @@ float Synth::processLFO(float deltaTime) {
     
     lastLfoPhase = lfoPhase;
     return lfoValue * properties["lfoAmount"]; // Amount is already 0-1
+}
+
+float Synth::processNoise(float deltaTime, float color) {
+    // Ultra-fast noise using LCG (Linear Congruential Generator)
+    
+    
+    return noiseLowpassOutput;
 } 

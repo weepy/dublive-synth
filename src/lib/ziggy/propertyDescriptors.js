@@ -285,5 +285,39 @@ export const propertyDescriptors = [
         step: 1,
         type: 'number',
         group: 'master'
+    },
+    {
+        name: 'noiseEnabled',
+        value: 0,
+        type: 'toggle',
+        group: 'noise',
+        options: ['Off', 'On']
+    },
+    {
+        name: 'noiseDecay',
+        value: 0.1,
+        min: 0,
+        max: 1,
+        step: 0.001,
+        type: 'range',
+        group: 'noise'
+    },
+    {
+        name: 'noiseColor',
+        value: 1,
+        min: 0,
+        max: 1,
+        step: 0.001,
+        type: 'range',
+        group: 'noise'
+    },
+    {
+        name: 'noiseLevel',
+        value: 0,
+        min: 0,
+        max: 1,
+        step: 0.001,
+        type: 'range',
+        group: 'noise'
     }
 ];

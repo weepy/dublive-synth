@@ -232,6 +232,12 @@
                             <span class="value-display">
                                 {(currentPreset[prop.name] ?? 0).toFixed(2)}
                             </span>
+                        {:else if prop.type == "toggle"}
+                            <select bind:value={currentPreset[prop.name]}>
+                                {#each prop.options as option, index}
+                                    <option value={index}>{option}</option>
+                                {/each}
+                            </select>
                         {/if}
                     </label>
                 {/each}

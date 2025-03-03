@@ -139,6 +139,14 @@ public:
     void abort();  // Add this declaration
 
 private:
+    // Add these new member variables for noise generator
+    float noiseValue = 0.0f;
+    float noisePhase = 0.0f;
+    float noiseLowpassOutput = 0.0f;
+    
+    // Helper method for noise generation
+    float processNoise(float deltaTime, float color);
+    
     std::map<std::string, float> properties = {
         // Amplitude envelope parameters
         {"ampAttack", 0.5f},
@@ -180,6 +188,12 @@ private:
         {"lfoAmount", 0.0f},    // 0-1 range
         {"lfoWaveform", 0.0f},  // 0=Triangle, 1=Saw, 2=Square, 3=S&H, 4=Sine
         {"lfoDestination", 0.0f}, // 0=Osc, 1=Filter, 2=FM, 3=Phase, 4=Mix
+        
+        // Add noise generator parameters
+        {"noiseDecay", 0.1f},
+        {"noiseColor", 1.0f},  // 0 = dark, 1 = bright
+        {"noiseLevel", 0.0f},
+        {"noiseEnabled", 0.0f},
     };
 
     float sampleRate;
@@ -247,7 +261,9 @@ private:
     float targetFreq1 = 440.0f;
     float targetFreq2 = 440.0f;
     float portamentoTime = 0.0f;
-    float portamentoStartTime = 0.0f;
+    float stateTime = 0.0f;  // Replace both noiseTime and portamentoStartTime
+
+    uint32_t noise_counter = 0;  // Simple counter for noise
 };
 
 #endif 
