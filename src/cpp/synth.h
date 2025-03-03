@@ -220,6 +220,10 @@ private:
     float x1 = 0.0f, x2 = 0.0f;  // Input history
     float y1 = 0.0f, y2 = 0.0f;  // Output history
     
+    // Add second set of filter state variables for 24dB slope
+    float x1_2 = 0.0f, x2_2 = 0.0f;  // Second stage input history
+    float y1_2 = 0.0f, y2_2 = 0.0f;  // Second stage output history
+    
     // Cached filter coefficients
     float b0 = 0.0f, b1 = 0.0f, b2 = 0.0f;
     float a1 = 0.0f, a2 = 0.0f;

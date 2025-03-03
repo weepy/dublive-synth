@@ -130,6 +130,13 @@ export const propertyDescriptors = [
 
     // Filter section
     {
+        name: 'filterType',
+        value: 0,
+        type: 'select',
+        group: 'filter',
+        options: ['Lowpass 24', 'Lowpass', 'Highpass', 'Bandpass', 'Notch']
+    },
+    {
         name: 'cutoff',
         value: 1,
         min: 0,

@@ -19,7 +19,8 @@ BiquadCoefficients calculateBiquadCoefficients(
 
     int filterType = static_cast<int>(type);
     switch (filterType) {
-        case 0:  // Lowpass (was FilterType::Lowpass)
+        case 0: // Lowpass 24
+        case 1:  // Lowpass (was FilterType::Lowpass)
             coeff.b0 = ((1.0f - cosw0) * 0.5f) / a0;
             coeff.b1 = (1.0f - cosw0) / a0;
             coeff.b2 = coeff.b0;
@@ -27,7 +28,7 @@ BiquadCoefficients calculateBiquadCoefficients(
             coeff.a2 = (1.0f - alpha) / a0;
             break;
 
-        case 1:  // Highpass (was FilterType::Highpass)
+        case 2:  // Highpass (was FilterType::Highpass)
             coeff.b0 = ((1.0f + cosw0) * 0.5f) / a0;
             coeff.b1 = -(1.0f + cosw0) / a0;
             coeff.b2 = coeff.b0;
@@ -35,7 +36,7 @@ BiquadCoefficients calculateBiquadCoefficients(
             coeff.a2 = (1.0f - alpha) / a0;
             break;
 
-        case 2:  // Bandpass (was FilterType::Bandpass)
+        case 3:  // Bandpass (was FilterType::Bandpass)
             coeff.b0 = alpha / a0;
             coeff.b1 = 0.0f;
             coeff.b2 = -alpha / a0;
@@ -43,7 +44,7 @@ BiquadCoefficients calculateBiquadCoefficients(
             coeff.a2 = (1.0f - alpha) / a0;
             break;
 
-        case 3:  // Notch (was FilterType::Notch)
+        case 4:  // Notch (was FilterType::Notch)
             coeff.b0 = 1.0f / a0;
             coeff.b1 = (-2.0f * cosw0) / a0;
             coeff.b2 = 1.0f / a0;

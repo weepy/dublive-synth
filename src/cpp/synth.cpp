@@ -191,6 +191,21 @@ void Synth::processFilter(float* input, int numSamples, float cutoff01) {
         y2 = y1;
         y1 = input[i];
     }
+
+    // Add second pass for Lowpass 24
+    if (static_cast<int>(filterType) == 0) {  // Lowpass 24
+        // Use second set of state variables for the second pass
+        for (int i = 0; i < numSamples; ++i) {
+            x0 = input[i];
+            input[i] = b0 * x0 + b1 * x1_2 + b2 * x2_2 - a1 * y1_2 - a2 * y2_2;
+            
+            // Update second filter state
+            x2_2 = x1_2;
+            x1_2 = x0;
+            y2_2 = y1_2;
+            y1_2 = input[i];
+        }
+    }
 }
 
 float Synth::processOscillator(const std::vector<float>* wave, float phaseOffset, int phaseMode, float freq, float& phase) {
