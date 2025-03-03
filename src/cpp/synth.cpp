@@ -124,7 +124,7 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
     float sampleReduction = properties["sampleReduction"];
     
     if (bitcrushAmount > 0.0f || sampleReduction > 0.0f) {
-        processBitcrusher(oscillatorOutput.data(), bufferSize, bitcrushAmount, sampleReduction);
+        // processBitcrusher(oscillatorOutput.data(), bufferSize, bitcrushAmount, sampleReduction);
     }
     
     // Process filter after bitcrusher

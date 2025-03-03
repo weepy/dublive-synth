@@ -66,7 +66,7 @@
             data-note={note}
             on:mousedown={(e) => onNoteOn(note + currentOctave * 12, e.currentTarget)}
             on:mouseup={(e) => onNoteOff(note + currentOctave * 12, e.currentTarget)}
-            on:mouseleave={(e) => activeKeys.has(note + currentOctave * 12) && onNoteOff(note + currentOctave * 12, e.currentTarget)}
+            on:mouseleave={(e) => activeKeys.has(note) && onNoteOff(note + currentOctave * 12, e.currentTarget)}
         >
             {key}
         </div>

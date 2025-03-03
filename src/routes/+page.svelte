@@ -113,8 +113,11 @@
 
         if(!url) {
             url = ziggyWaves[0];
-            index = 0
+            index = 0;
         }
+
+        // Skip if we've already sent this wavetable
+        if (wavetableCache.has(url)) return;
 
         let wavetable = await loadWavetableFromUrl(url);
         
@@ -123,6 +126,9 @@
             key: index,
             table: wavetable
         }, [wavetable.buffer]);
+
+        // Cache the URL to indicate this wavetable has been sent
+        wavetableCache.set(url, true);
     }
 
     function handleNoteOn(note, keyElement) {
@@ -216,13 +222,25 @@
                                 {/each}
                             </select>
                         {:else if prop.type == 'wave'}
-                            <select bind:value={currentPreset[prop.name]}>
-                                {#each prop.options as option, index}
-                                    <option value={index}>
-                                        {option.split('/').pop().replace('.L.ogg', '')}
-                                    </option>
-                                {/each}
-                            </select>
+                            <div class="wave-selector">
+                                <button class="wave-btn" on:click={() => {
+                                    const newIndex = (currentPreset[prop.name] - 1 + prop.options.length) % prop.options.length;
+                                    currentPreset[prop.name] = newIndex;
+                                }}>←</button>
+                                
+                                <select bind:value={currentPreset[prop.name]}>
+                                    {#each prop.options as option, index}
+                                        <option value={index}>
+                                            {option.split('/').pop().replace('.L.ogg', '')}
+                                        </option>
+                                    {/each}
+                                </select>
+
+                                <button class="wave-btn" on:click={() => {
+                                    const newIndex = (currentPreset[prop.name] + 1) % prop.options.length;
+                                    currentPreset[prop.name] = newIndex;
+                                }}>→</button>
+                            </div>
                         {/if}
                     </label>
                 {/each}
@@ -329,5 +347,27 @@
 
     .play-button:hover {
         background-color: #45a049;
+    }
+
+    .wave-selector {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .wave-btn {
+        padding: 2px 8px;
+        cursor: pointer;
+        background: #eee;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .wave-btn:hover {
+        background: #ddd;
+    }
+
+    .wave-selector select {
+        flex: 1;
     }
 </style> 
