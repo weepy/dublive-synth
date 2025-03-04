@@ -1,8 +1,9 @@
 <script>
     import { onMount } from 'svelte';
     import Keyboard from '$lib/components/Keyboard.svelte';
+    import SavePatchDialog from '$lib/components/SavePatchDialog.svelte';
 
-    import ziggyWaves from '$lib/ziggy/waves.json';
+    import {waves,impacts} from '$lib/ziggy/waves.js';
 
     let synth;
     let audioContext;
@@ -18,19 +19,44 @@
     // let release = 0.9;
     let synthNode;
 
+    const SHOW_WAVE3 = false
+
     // Track active keys
     // let activeKeys = new Set();
 
     import { propertyDescriptors } from "$lib/ziggy/propertyDescriptors.js"
 
 
-    let currentPreset = {}
+    let currentPreset = {
+        name: 'Default'
+    };
 
     // Change this line to use tab instead of group for tab organization
     let activeTab = 'oscillators'; 
 
+    // Add these near the top with other state variables
+    let patches = {};
+
+    let showSaveDialog = false;
+
     onMount(() => {
-        
+        // Load saved patches from localStorage
+        try {
+            const savedPatches = localStorage.getItem('patches');
+            if (savedPatches) {
+                patches = JSON.parse(savedPatches);
+            } else {
+                // Initialize with current preset as "Default" patch
+                patches = {
+                    'Default': { ...currentPreset }
+                };
+            }
+        } catch (error) {
+            console.error('Error loading patches:', error);
+            patches = {
+                'Default': { ...currentPreset }
+            };
+        }
 
         propertyDescriptors.forEach(prop => {
             currentPreset[prop.name] = prop.value;
@@ -48,6 +74,10 @@
             console.error('Error loading preset:', error);
         }
 
+        // Initialize name if not present
+        if (!currentPreset.name) {
+            currentPreset.name = 'Default';
+        }
     });
     
 
@@ -56,15 +86,19 @@
         // Create an async function to handle all updates
         (async () => {
 
-            console.log(currentPreset.wave1);
+            // console.log(currentPreset.wave1);
             // Load wavetables first if needed
             if (currentPreset.wave1) {
                 await sendWavetable(currentPreset.wave1);
             }
 
-            console.log(currentPreset.wave2);
+            // console.log(currentPreset.wave2);
             if (currentPreset.wave2) {
                 await sendWavetable(currentPreset.wave2);
+            }
+
+            if(currentPreset.wave3) {
+                await sendWavetable(currentPreset.wave3);
             }
 
             // Send other properties after wavetables are loaded
@@ -84,7 +118,11 @@
 
     // Function to load and decode audio file
     async function loadWavetableFromUrl(url) {
+
+        console.log("loadWavetableFromUrl", url)
+
         if (wavetableCache.has(url)) {
+            console.log("loadWavetableFromUrl cache hit", url)
             return wavetableCache.get(url);
         }
 
@@ -100,7 +138,7 @@
 
         // // Resample to 2048 points using linear interpolation
         // for (let i = 0; i < 2048; i++) {
-        //     const position = (i / 2048) * (data.length - 1); // Adjust position calculation
+        //     const position = (i / 2048) * data.length - 1); // Adjust position calculation
         //     const index1 = Math.floor(position);
         //     const index2 = Math.min(index1 + 1, data.length - 1);
         //     const fraction = position - index1;
@@ -127,24 +165,24 @@
     //         hash = (hash << 5) - hash + char;
     //         hash |= 0; // Convert to 32bit integer
     //     }
-    //     return ziggyWaves.indexOf(str);
+    //     return waves.indexOf(str);
     // }
     // Update the sendWavetable function to return a promise
     async function sendWavetable(url) {
         if (!synthNode) return;
+
+        console.log("sendWavetable", url)
         
         // Ensure url is valid
-        if (!ziggyWaves.includes(url)) {
-            url = ziggyWaves[0];
-        }
+        // if (!waves.includes(url)) {
+        //     url = waves[0];
+        // }
 
         // Skip if we've already sent this wavetable
         if (wavetableCache.has(url)) return;
 
-        let wavetable = await loadWavetableFromUrl(url);
+        const wavetable = await loadWavetableFromUrl(url);
         
-        console.log(wavetable);
-
         synthNode.port.postMessage({
             type: 'loadwavetable',
             key: url,
@@ -207,13 +245,42 @@
     }
 
   
-    function next(prop, dir = 1) {
+    function next(prop, _waves, dir = 1) {
         const currentUrl = currentPreset[prop];
-        const currentIndex = ziggyWaves.indexOf(currentUrl);
-        const newIndex = (currentIndex + dir + ziggyWaves.length) % ziggyWaves.length;
-        currentPreset[prop] = ziggyWaves[newIndex] || ziggyWaves[0];
+        const currentIndex = _waves.indexOf(currentUrl);
+        const newIndex = (currentIndex + dir + _waves.length) % _waves.length;
+        currentPreset[prop] = _waves[newIndex] || _waves[0];
 
-        console.log(currentPreset[prop]);
+        currentPreset = currentPreset
+        // console.log(currentPreset[prop]);
+    }
+
+    function savePatch(name) {
+        if (!name) return;
+        currentPreset.name = name;
+        patches[name] = { ...currentPreset };
+        localStorage.setItem('patches', JSON.stringify(patches));
+    }
+
+    function loadPatch(name) {
+        if (patches[name]) {
+            currentPreset = { ...patches[name] };
+        }
+    }
+
+    function deletePatch(name) {
+        if (name === 'Default') return; // Prevent deleting default patch
+        delete patches[name];
+        localStorage.setItem('patches', JSON.stringify(patches));
+        if (currentPreset.name === name) {
+            currentPreset = { ...patches['Default'] };
+        }
+    }
+
+    function handleSavePatch(event) {
+        const name = event.detail;
+        if (!name) return;
+        savePatch(name);
     }
 </script>
 
@@ -253,6 +320,33 @@
             </button>
         </div>
 
+        <!-- Replace the existing patch-controls div with this updated version -->
+        <div class="patch-controls">
+            <select 
+                style="width: 200px;"
+                value={currentPreset.name}
+                on:change={(e) => loadPatch(e.target.value)}
+            >
+                {#each Object.keys(patches) as patchName}
+                    <option value={patchName}>{patchName}</option>
+                {/each}
+            </select>
+            <!-- <input 
+                type="text" 
+                placeholder="Patch name" 
+                bind:value={currentPreset.name}
+            > -->
+            <button on:click={() => showSaveDialog = true}>Save</button>
+            <button on:click={() => deletePatch(currentPreset.name)}>Delete</button>
+        </div>
+
+        <SavePatchDialog
+            bind:show={showSaveDialog}
+            currentName={currentPreset.name}
+            {patches}
+            on:save={handleSavePatch}
+        />
+
         {#if activeTab === 'oscillators'}
             <div class="control-group">
                 <div class="group-controls">
@@ -260,15 +354,15 @@
                     <label>
                         Wave 1:
                         <div class="wave-selector">
-                            <button class="wave-btn" on:click={() => next('wave1', -1)}>←</button>
+                            <button class="wave-btn" on:click={() => next('wave1', waves,-1)}>←</button>
                             <select bind:value={currentPreset.wave1}>
-                                {#each ziggyWaves as url}
+                                {#each waves as url}
                                     <option value={url}>
                                         {url.split('/').pop().replace(/\..*$/, '').replace(/[-_]/g, ' ')}
                                     </option>
                                 {/each}
                             </select>
-                            <button class="wave-btn" on:click={() => next('wave1', 1)}>→</button>
+                            <button class="wave-btn" on:click={() => next('wave1',waves, 1)}>→</button>
                         </div>
                     </label>
                     <label>
@@ -291,15 +385,15 @@
                     <label>
                         Wave 2:
                         <div class="wave-selector">
-                            <button class="wave-btn" on:click={() => next('wave2', -1)}>←</button>
+                            <button class="wave-btn" on:click={() => next('wave2', waves,-1)}>←</button>
                             <select bind:value={currentPreset.wave2}>
-                                {#each ziggyWaves as url}
+                                {#each waves as url}
                                     <option value={url}>
                                         {url.split('/').pop().replace(/\..*$/, '').replace(/[-_]/g, ' ')}
                                     </option>
                                 {/each}
                             </select>
-                            <button class="wave-btn" on:click={() => next('wave2', 1)}>→</button>
+                            <button class="wave-btn" on:click={() => next('wave2', waves,1)}>→</button>
                         </div>
                     </label>
                     <label>
@@ -310,6 +404,34 @@
                             <input type="number" bind:value={currentPreset.cent2} min={-100} max={100} step={1} title="Cents">
                         </div>
                     </label>
+
+                   {#if SHOW_WAVE3}
+                   <h3></h3>
+                   <label>
+                       Wave 3:
+                       <div class="wave-selector">
+                           <button class="wave-btn" on:click={() => next('wave3',impacts, -1)}>←</button>
+                           <select bind:value={currentPreset.wave3}>
+                               {#each impacts as url}
+                                   <option value={url}>
+                                       {url.split('/').pop().replace(/\..*$/, '').replace(/[-_]/g, ' ')}
+                                   </option>
+                               {/each}
+                           </select>
+                           <button class="wave-btn" on:click={() => next('wave3',impacts, 1)}>→</button>
+                       </div>
+                   </label>
+                   {/if}
+                    <!-- <label>
+                        Level:
+                        <input type="range" bind:value={currentPreset.wave3Level} min={0} max={1} step={0.001}>
+                        <span class="value-display">{(currentPreset.wave3Level ?? 0).toFixed(3)}</span>
+                    </label>
+                    <label>
+                        Decay:
+                        <input type="range" bind:value={currentPreset.wave3Decay} min={0} max={1} step={0.001}>
+                        <span class="value-display">{(currentPreset.wave3Decay ?? 0).toFixed(3)}</span>
+                    </label> -->
 
                     <h3></h3>
                     <label>
@@ -681,5 +803,33 @@
     .pitch-control input[type="number"] {
         width: 60px;
         text-align: center;
+    }
+
+    .patch-controls {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .patch-controls select,
+    .patch-controls input {
+        padding: 4px 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .patch-controls button {
+        padding: 4px 12px;
+        background: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .patch-controls button:hover {
+        background: #45a049;
     }
 </style> 

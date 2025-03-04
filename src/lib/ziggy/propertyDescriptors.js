@@ -1,12 +1,17 @@
-import ziggyWaves from './waves.json';
+import {waves,impacts} from './waves';
 
 export const propertyDescriptors = [
+    {
+        name: 'name',
+        value: 'Default',
+        type: 'string'
+    },
     // OSC 1
     {
         name: 'wave1',
-        value: ziggyWaves[0],
+        value: waves[0],
         type: 'wave',
-        options: ziggyWaves
+        options: waves
     },
     {
         name: 'oct1',
@@ -50,9 +55,9 @@ export const propertyDescriptors = [
     // OSC 2
     {
         name: 'wave2',
-        value: ziggyWaves[0],
+        value: waves[0],
         type: 'wave',
-        options: ziggyWaves
+        options: waves
     },
     {
         name: 'oct2',
@@ -98,6 +103,30 @@ export const propertyDescriptors = [
     //     group: 'osc2',
     //     options: ['Off', 'Subtraction', 'Multiplication']
     // },
+
+    // Add after the OSC 2 section and before the Mix section
+    {
+        name: 'wave3',
+        value: impacts[0],
+        type: 'wave',
+        options: waves
+    },
+    {
+        name: 'wave3Level',
+        value: 0,
+        min: 0,
+        max: 1,
+        step: 0.001,
+        type: 'range'
+    },
+    {
+        name: 'wave3Decay',
+        value: 0.1,
+        min: 0,
+        max: 1,
+        step: 0.001,
+        type: 'range'
+    },
 
     // Mix section
     {

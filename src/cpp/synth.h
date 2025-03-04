@@ -197,11 +197,17 @@ private:
         {"lfoWaveform", 0.0f},  // 0=Triangle, 1=Saw, 2=Square, 3=S&H, 4=Sine
         {"lfoDestination", 0.0f}, // 0=Osc, 1=Filter, 2=FM, 3=Phase, 4=Mix
         
+        
         // Add noise generator parameters
         {"noiseDecay", 0.1f},
         {"noiseColor", 1.0f},  // 0 = dark, 1 = bright
         {"noiseLevel", 0.0f},
         // {"noiseEnabled", 0.0f},
+        
+        // Add new wave3 parameters
+        {"wave3", 0.0f},
+        {"wave3Decay", 0.1f},
+        {"wave3Level", 0.0f},
     };
 
     float sampleRate;
@@ -218,6 +224,7 @@ private:
     
     const std::vector<float>* wave1 = nullptr;
     const std::vector<float>* wave2 = nullptr;
+    const std::vector<float>* wave3 = nullptr;
     
     float processOscillator(const std::vector<float>* wave, float phaseOffset, int phaseMode, float freq, float& phase);
     float processEnvelope();
@@ -278,6 +285,10 @@ private:
     uint32_t noise_counter = 0;  // Simple counter for noise
 
     void processBitcrusher(float* input, int numSamples, float bitcrushAmount, float sampleReduction);
+
+    // Add new member variables
+    float pos3 = 0.0f;
+    bool wave3Playing = false;
 };
 
 #endif 

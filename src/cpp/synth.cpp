@@ -11,6 +11,8 @@ Synth::Synth(float sampleRate, std::map<float, std::vector<float>>* wavetables)
 
     wave1 = &(wavetables->begin()->second);
     wave2 = &(wavetables->begin()->second);
+    wave3 = 0;
+    // wave3 = &(wavetables->begin()->second);
    
 }
 
@@ -75,11 +77,15 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
     
     
     float osc2Enabled = properties["osc2Enabled"];
+    // float wave3Level = properties["wave3Level"];
+    // float wave3Decay = properties["wave3Decay"] * properties["wave3Decay"] * properties["wave3Decay"] * 10.0f;
+
     
     // Process main oscillators
     for (int i = 0; i < bufferSize; ++i) {
         float osc2 = 0.0f;
         
+        float sample;
         float modulated_freq1 = freq1;
 
         // Only process osc2 if enabled
@@ -90,8 +96,43 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
         
         float osc1 = processOscillator(wave1, phaseOffset1, phaseMode1, modulated_freq1, phase1);
         
+
+        sample = osc1 * (1.0f - mix) + osc2 * mix;// * wave3Level;
+
+        // // Add wave3 processing        
+        // if (wave3 && wave3Level > 0.0f && wave3Playing) {
+        //     size_t index1 = static_cast<size_t>(pos3);
+        //     size_t index2 = (index1 + 1);// % wave3->size();  // Wrap around to start if needed
+
+            
+        //     float frac = pos3 - index1;
+
+        //     float l = (*wave3)[index1]; 
+        //     float r = (*wave3)[index2];
+            
+        //     float wave3Sample = l + frac * (r - l);
+            
+        //     float osc3 = wave3Sample;
+        //     float sampleStep = std::pow(2.0f, (midiNote - 72) / 12.0f);
+           
+        //     pos3 += sampleStep;
+
+        //     float fadeOutTime = wave3->size() * wave3Decay / sampleRate;
+
+        //     float env =  1.0f - (stateTime / fadeOutTime); // * sampleRate / wave3Decay);
+
+        //     if(env < 0.0f) {
+        //         env = 0.0f;
+        //         wave3Playing = false;
+        //     }
+        //     sample += osc3 * wave3Level * env;
+        // }
+
         // Mix oscillators (osc2 will be 0 if disabled)
-        oscillatorOutput[i] = osc1 * (1.0f - mix) + osc2 * mix;
+        oscillatorOutput[i] = sample;
+
+        // printf("%f\n", pos3);
+        
     }
     
     // float noiseEnabled = properties["noiseEnabled"];
@@ -214,13 +255,7 @@ void Synth::processFilter(float* input, int numSamples, float cutoff01) {
 float Synth::processOscillator(const std::vector<float>* wave, float phaseOffset, int phaseMode, float freq, float& phase) {
     float output = 0.0f;
     int wavetableSize = wave->size();
-
-    // Simply add the offset to the phase (phaseOffset should be in range [0, 1])
-    // float phaseWithOffset = ;
-    // Then wrap to [0, 1) range
-    // float phaseWithOffset = std::fmod(phase + phaseOffset + 10.f, 1.0f);
-    // if (phaseWithOffset < 0.0f) phaseWithOffset += 1.0f;
-
+    
     // Process main waveform using phase with offset
     float position1 = phase * wavetableSize;
     size_t index1_1 = static_cast<size_t>(position1);
@@ -249,6 +284,7 @@ float Synth::processOscillator(const std::vector<float>* wave, float phaseOffset
         output = sample1; // No phase modulation
     }
     
+    // Simple phase increment (multiplier is now applied to freq)
     phase += freq / sampleRate;
     if (phase >= 1.0f) phase -= 1.0f;
     
@@ -261,9 +297,7 @@ void Synth::noteOn(int m, float vel, int fromMidiNote) {
     isActive = true;
     isAborting = false;
     
-    // Reset state time when note starts
     stateTime = 0.0f;
-    
     portamentoTime = properties["portamento"];
     
     // Reset LFO phase if retrigger is enabled
@@ -273,30 +307,38 @@ void Synth::noteOn(int m, float vel, int fromMidiNote) {
         lastLfoPhase = 0.0f;
     }
     
-    // Calculate target frequencies with offsets
-    targetFreq1 = std::pow(2.0f, 
-        (midiNote + properties["semi1"] + 
+    // Calculate the base wavetable size (1380)
+    const int BASE_WAVETABLE_SIZE = 1380;
+    
+    // Calculate multipliers for each wave
+    int multiplier1 = std::round(static_cast<float>(wave1->size()) / BASE_WAVETABLE_SIZE);
+    int multiplier2 = std::round(static_cast<float>(wave2->size()) / BASE_WAVETABLE_SIZE);
+    if (multiplier1 < 1) multiplier1 = 1;
+    if (multiplier2 < 1) multiplier2 = 1;
+    
+    // Modified frequency calculations using standard MIDI tuning (A4 = 440Hz)
+    targetFreq1 = (440.0f * std::pow(2.0f, 
+        (midiNote - 69 + properties["semi1"] + 
          properties["cent1"] / 100.0f + 
-         properties["oct1"] * 12.0f) / 12.0f);
+         properties["oct1"] * 12.0f) / 12.0f)) / multiplier1;
          
-    targetFreq2 = std::pow(2.0f, 
-        (midiNote + properties["semi2"] + 
+    targetFreq2 = (440.0f * std::pow(2.0f, 
+        (midiNote - 69 + properties["semi2"] + 
          properties["cent2"] / 100.0f + 
-         properties["oct2"] * 12.0f) / 12.0f);
+         properties["oct2"] * 12.0f) / 12.0f)) / multiplier2;
     
     if (fromMidiNote >= 0 && portamentoTime > 0.0f) {
-        // Set starting frequencies from the previous note
-        currentFreq1 = std::pow(2.0f, 
-            (fromMidiNote + properties["semi1"] + 
+        // Set starting frequencies from the previous note using same formula
+        currentFreq1 = (440.0f * std::pow(2.0f, 
+            (fromMidiNote - 69 + properties["semi1"] + 
              properties["cent1"] / 100.0f + 
-             properties["oct1"] * 12.0f) / 12.0f);
+             properties["oct1"] * 12.0f) / 12.0f)) / multiplier1;
              
-        currentFreq2 = std::pow(2.0f, 
-            (fromMidiNote + properties["semi2"] + 
+        currentFreq2 = (440.0f * std::pow(2.0f, 
+            (fromMidiNote - 69 + properties["semi2"] + 
              properties["cent2"] / 100.0f + 
-             properties["oct2"] * 12.0f) / 12.0f);
+             properties["oct2"] * 12.0f) / 12.0f)) / multiplier2;
     } else {
-        // No portamento, set current frequencies directly to target
         currentFreq1 = targetFreq1;
         currentFreq2 = targetFreq2;
     }
@@ -320,6 +362,9 @@ void Synth::noteOn(int m, float vel, int fromMidiNote) {
     filterEnv.noteOn();
     
     // baseCutoff = properties["cutoff"]; // Store base cutoff for filter envelope
+    
+    wave3Playing = true;  // Reset wave3 playback
+    pos3 = 0.0f;       // Reset pos3
 }
 
 void Synth::noteOff() {
@@ -344,6 +389,9 @@ void Synth::setProperties(const std::map<std::string, float>& props) {
         }
         if (name == "wave2") {
             wave2 = &((*wavetables)[value]);
+        }
+        if (name == "wave3") {
+            wave3 = &((*wavetables)[value]);
         }
     }
 }
@@ -394,12 +442,7 @@ float Synth::processLFO(float deltaTime) {
     return lfoValue * properties["lfoAmount"] * fadeInMultiplier;
 }
 
-float Synth::processNoise(float deltaTime, float color) {
-    // Ultra-fast noise using LCG (Linear Congruential Generator)
-    
-    
-    return noiseLowpassOutput;
-}
+
 
 void Synth::processBitcrusher(float* input, int numSamples, float bitcrushAmount, float sampleReduction) {
     // Bit depth reduction (1.0 = 1 bit, 0.0 = full bit depth)

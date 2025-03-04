@@ -23,13 +23,17 @@ class SynthProcessor extends AudioWorkletProcessor {
             }
             else if (e.data.type === 'properties') {
                 // Replace wavetable URLs with their corresponding slot numbers
-                const {wave1, wave2, ...properties} = e.data.properties
+                const {wave1, wave2, wave3, ...properties} = e.data.properties
                 
                 if(wave1) 
                     properties.wave1 = this.wavetableSlots.get(wave1)
                 if(wave2)
                     properties.wave2 = this.wavetableSlots.get(wave2)
-                
+                if(wave3)
+                    properties.wave3 = this.wavetableSlots.get(wave3)
+
+
+                console.log("properties", properties)
                 this.synth.setProperties(properties);
             }
             else if (e.data.type === 'debug') {
@@ -43,6 +47,8 @@ class SynthProcessor extends AudioWorkletProcessor {
                     slot = this.nextSlot++;
                     this.wavetableSlots.set(key, slot);
                 }
+
+                console.log("loadwavetable", key, this.wavetableSlots)
                 
                 this.synth.loadWavetable(slot, new Float32Array(e.data.table));
             }

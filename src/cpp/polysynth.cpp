@@ -108,9 +108,11 @@ void PolySynth::noteOn(int m, float velocity) {
             
             // Calculate time-based panning using autoPanWidth and autoPanRate
             // float panTime = static_cast<float>(frameCounter) ;  // Convert to seconds
-            float pan = properties["autoPanWidth"] * std::sin(2.0f * M_PI * properties["autoPanRate"] * frameCounter/4410.0f);
-            // Add debug logging
-            // printf("Debug - Pan: %f, Angle: %f, Time: %f\n", pan, pan, panTime);
+            //float pan = properties["autoPanWidth"] * std::sin(2.0f * M_PI * properties["autoPanRate"] * frameCounter/441.0f);
+            float pan = properties["autoPanWidth"] * std::sin(2.0f * M_PI * properties["autoPanRate"] * voiceCounter/20.f);
+
+
+
             float angle = (pan + 1.0f) * M_PI / 4.0f;
             v.gainLeft = std::cos(angle);
             v.gainRight = std::sin(angle);
