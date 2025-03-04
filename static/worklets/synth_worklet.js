@@ -53,6 +53,9 @@ class SynthProcessor extends AudioWorkletProcessor {
                 
                 this.synth.setProperties(properties);
             }
+            else if (e.data.type === 'debug') {
+                this.debug = e.data.debug;
+            }
             else if (e.data.type === 'loadwavetable') {
                 const key = e.data.key;
                 let slot = this.wavetableSlots.get(key);
@@ -78,14 +81,25 @@ class SynthProcessor extends AudioWorkletProcessor {
         
         const outputL = output[0];
         const outputR = output[1];
-        
-        this.synth.processBuffer(this.outputPtr, 128);
-        
-        // Copy interleaved stereo data to separate channels
-        for (let i = 0; i < 128; i++) {
-            outputL[i] = this.outputHeap[i * 2];
-            outputR[i] = this.outputHeap[i * 2 + 1];
+      
+
+        if(this.debug) {
+            for (let i = 0; i < 128; i++) {
+                outputL[i] = this.outputHeap[i * 2];
+                outputR[i] = this.outputHeap[i * 2 + 1];
+            }
         }
+        else {
+  
+            this.synth.processBuffer(this.outputPtr, 128);
+        
+            // Copy interleaved stereo data to separate channels
+            for (let i = 0; i < 128; i++) {
+                outputL[i] = this.outputHeap[i * 2];
+                outputR[i] = this.outputHeap[i * 2 + 1];
+            }
+        }
+
         return true;
     }
     
@@ -99,3 +113,25 @@ class SynthProcessor extends AudioWorkletProcessor {
 }
 
 registerProcessor('synth-processor', SynthProcessor);
+
+function generateTriangleWave(size = 2048) {
+    const wave = new Float32Array(size);
+    const period = size;
+    const halfPeriod = period / 2;
+    
+    for (let i = 0; i < size; i++) {
+        // Generate values from -1 to 1
+        if (i < halfPeriod) {
+            // Rising part: -1 to 1
+            wave[i] = -1 + (2 * i / halfPeriod);
+        } else {
+            // Falling part: 1 to -1
+            wave[i] = 1 - (2 * (i - halfPeriod) / halfPeriod);
+        }
+    }
+    
+    return wave;
+}
+
+// Generate a triangle wave table
+const triangleWave = generateTriangleWave();

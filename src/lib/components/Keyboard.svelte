@@ -57,6 +57,26 @@
             }
         }
     }
+
+    function handlePointerDown(e) {
+        e.preventDefault();
+        const note = parseInt(e.currentTarget.dataset.note);
+        if (!activeKeys.has(note)) {
+            onNoteOn(note + currentOctave * 12, e.currentTarget);
+            activeKeys.add(note);
+            // Capture the pointer to ensure we get the pointerup even if dragged outside
+            e.currentTarget.setPointerCapture(e.pointerId);
+        }
+    }
+
+    function handlePointerUp(e) {
+        const note = parseInt(e.currentTarget.dataset.note);
+        if (activeKeys.has(note)) {
+            onNoteOff(note + currentOctave * 12, e.currentTarget);
+            activeKeys.delete(note);
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+    }
 </script>
 
 <div class="keyboard">
@@ -64,9 +84,9 @@
         <div
             class="key {type === 'black' ? 'black-key' : ''}"
             data-note={note}
-            on:mousedown={(e) => onNoteOn(note + currentOctave * 12, e.currentTarget)}
-            on:mouseup={(e) => onNoteOff(note + currentOctave * 12, e.currentTarget)}
-            on:mouseleave={(e) => activeKeys.has(note) && onNoteOff(note + currentOctave * 12, e.currentTarget)}
+            on:pointerdown={handlePointerDown}
+            on:pointerup={handlePointerUp}
+            on:pointercancel={handlePointerUp}
         >
             {key}
         </div>
@@ -81,6 +101,9 @@
         justify-content: center;
         margin: 20px;
         position: relative;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
     }
     .key {
         width: 40px;
