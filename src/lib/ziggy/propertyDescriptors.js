@@ -4,23 +4,20 @@ export const propertyDescriptors = [
     // OSC 1
     {
         name: 'wave1',
-        value: 'basic/sine.wav',
+        value: ziggyWaves[0],
         type: 'wave',
-        group: 'osc1',
         options: ziggyWaves
     },
     {
         name: 'oct1',
         value: 0,
         type: "number",
-        group: 'osc1',
         step: 1,
     },
     {
         name: 'semi1',
         type: "number",
         value: 0,
-        group: 'osc1',
         min: -12,
         max: 12,
         step: 1,
@@ -29,7 +26,6 @@ export const propertyDescriptors = [
         name: 'cent1',
         type: "number",
         value: 0,
-        group: 'osc1',
         min: -100,
         max: 100,
         step: 1,
@@ -54,23 +50,20 @@ export const propertyDescriptors = [
     // OSC 2
     {
         name: 'wave2',
-        value: 'basic/sine.wav',
+        value: ziggyWaves[0],
         type: 'wave',
-        group: 'osc2',
         options: ziggyWaves
     },
     {
         name: 'oct2',
         value: 0,
         type: "number",
-        group: 'osc2',
         step: 1,
     },
     {
         name: 'semi2',
         type: "number",
         value: 0,
-        group: 'osc2',
         min: -12,
         max: 12,
         step: 1,
@@ -79,7 +72,6 @@ export const propertyDescriptors = [
         name: 'cent2',
         type: "number",
         value: 0,
-        group: 'osc2',
         min: -100,
         max: 100,
         step: 1,
@@ -88,7 +80,6 @@ export const propertyDescriptors = [
         name: 'osc2Enabled',
         value: 1,
         type: 'toggle',
-        group: 'osc2',
         options: ['Off', 'On']
     },
     // {
@@ -115,8 +106,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 1,
         step: 0.001,    
-        type: 'range',
-        group: 'mix'
+        type: 'range'
     },
     {
         name: 'fmAmount',
@@ -124,8 +114,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 1,
         step: 0.01,
-        type: 'range',
-        group: 'mix'
+        type: 'range'
     },
 
     // Filter section
@@ -133,7 +122,6 @@ export const propertyDescriptors = [
         name: 'filterType',
         value: 0,
         type: 'select',
-        group: 'filter',
         options: ['Lowpass 24', 'Lowpass', 'Highpass', 'Bandpass', 'Notch']
     },
     {
@@ -142,8 +130,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 1,
         step: 0.01,
-        type: 'range',
-        group: 'filter'
+        type: 'range'
     },
     {
         name: 'resonance',
@@ -151,8 +138,7 @@ export const propertyDescriptors = [
         min: 0.1,
         max: 10,
         step: 0.01,
-        type: 'range',
-        group: 'filter'
+        type: 'range'
     },
 
     // Filter Envelope
@@ -162,8 +148,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 2,
         step: 0.01,
-        type: 'range',
-        group: 'filterEnv'
+        type: 'range'
     },
     {
         name: 'filterDecay',
@@ -171,8 +156,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 2,
         step: 0.01,
-        type: 'range',
-        group: 'filterEnv'
+        type: 'range'
     },
     {
         name: 'filterSustain',
@@ -180,8 +164,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 1,
         step: 0.01,
-        type: 'range',
-        group: 'filterEnv'
+        type: 'range'
     },
     {
         name: 'filterRelease',
@@ -189,8 +172,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 2,
         step: 0.01,
-        type: 'range',
-        group: 'filterEnv'
+        type: 'range'
     },
     {
         name: 'filterEnvAmount',
@@ -198,8 +180,7 @@ export const propertyDescriptors = [
         min: -1,
         max: 1,
         step: 0.01,
-        type: 'range',
-        group: 'filterEnv'
+        type: 'range'
     },
 
     // Amp Envelope
@@ -209,8 +190,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 2,
         step: 0.01,
-        type: 'range',
-        group: 'ampEnv'
+        type: 'range'
     },
     {
         name: 'ampDecay',
@@ -218,8 +198,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 2,
         step: 0.01,
-        type: 'range',
-        group: 'ampEnv'
+        type: 'range'
     },
     {
         name: 'ampSustain',
@@ -227,8 +206,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 1,
         step: 0.01,
-        type: 'range',
-        group: 'ampEnv'
+        type: 'range'
     },
     {
         name: 'ampRelease',
@@ -236,8 +214,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 2,
         step: 0.01,
-        type: 'range',
-        group: 'ampEnv'
+        type: 'range'
     },
 
     // LFO
@@ -245,14 +222,12 @@ export const propertyDescriptors = [
         name: "lfoWaveform",
         type: "select",
         value: 0,
-        group: 'lfo',
         options: ["Triangle", "Sawtooth", "Square", "Sample & Hold", "Sine"]
     },
     {
         name: "lfoRetrigger",
         type: "toggle",
         value: 0,
-        group: 'lfo',
         options: ["Off", "On"]
     },
     {
@@ -261,8 +236,7 @@ export const propertyDescriptors = [
         value: 0.5,
         min: 0,
         max: 1,
-        step: 0.01,
-        group: 'lfo'
+        step: 0.01
     },
     {
         name: "lfoAmount",
@@ -270,8 +244,7 @@ export const propertyDescriptors = [
         value: 0,
         min: 0,
         max: 1,
-        step: 0.01,
-        group: 'lfo'
+        step: 0.01
     },
     {
         name: "lfoFadeIn",
@@ -279,14 +252,12 @@ export const propertyDescriptors = [
         value: 0,
         min: 0,
         max: 2,
-        step: 0.01,
-        group: 'lfo'
+        step: 0.01
     },
     {
         name: "lfoDestination",
         type: "select",
         value: 0,
-        group: 'lfo',
         options: ["Oscillators", "Filter", "FM",  "Mix"]
     },
 
@@ -297,8 +268,23 @@ export const propertyDescriptors = [
         min: 0,
         max: 2,
         step: 0.01,
-        type: 'range',
-        group: 'master'
+        type: 'range'
+    },
+    {
+        name: 'autoPanWidth',
+        value: 0,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        type: 'range'
+    },
+    {
+        name: 'autoPanRate',
+        value: 0.5,
+        min: 0,
+        max: 10,
+        step: 0.01,
+        type: 'range'
     },
     {
         name: 'masterGain',
@@ -306,8 +292,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 1,
         step: 0.01,
-        type: 'range',
-        group: 'master'
+        type: 'range'
     },
     {
         name: 'polyphony',
@@ -315,24 +300,21 @@ export const propertyDescriptors = [
         min: 1,
         max: 8,
         step: 1,
-        type: 'number',
-        group: 'master'
+        type: 'number'
     },
-    {
-        name: 'noiseEnabled',
-        value: 0,
-        type: 'toggle',
-        group: 'noise',
-        options: ['Off', 'On']
-    },
+    // {
+    //     name: 'noiseEnabled',
+    //     value: 0,
+    //     type: 'toggle',
+    //     options: ['Off', 'On']
+    // },
     {
         name: 'noiseDecay',
         value: 0.1,
         min: 0,
         max: 1,
         step: 0.001,
-        type: 'range',
-        group: 'noise'
+        type: 'range'
     },
     {
         name: 'noiseColor',
@@ -340,8 +322,7 @@ export const propertyDescriptors = [
         min: 0,
         max: 1,
         step: 0.001,
-        type: 'range',
-        group: 'noise'
+        type: 'range'
     },
     {
         name: 'noiseLevel',
@@ -349,27 +330,26 @@ export const propertyDescriptors = [
         min: 0,
         max: 1,
         step: 0.001,
-        type: 'range',
-        group: 'noise'
+        type: 'range'
     },
 
-    // Effects
-    {
-        name: 'bitcrushAmount',
-        value: 0,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        type: 'range',
-        group: 'effects'
-    },
-    {
-        name: 'sampleReduction',
-        value: 0,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        type: 'range',
-        group: 'effects'
-    }
+    // // Effects
+    // {
+    //     name: 'bitcrushAmount',
+    //     value: 0,
+    //     min: 0,
+    //     max: 1,
+    //     step: 0.01,
+    //     type: 'range',
+    //     group: 'effects'
+    // },
+    // {
+    //     name: 'sampleReduction',
+    //     value: 0,
+    //     min: 0,
+    //     max: 1,
+    //     step: 0.01,
+    //     type: 'range',
+    //     group: 'effects'
+    // }
 ];

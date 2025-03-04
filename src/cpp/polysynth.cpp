@@ -25,19 +25,26 @@ PolySynth::PolySynth(float sampleRate, int maxVoices)
 
 void PolySynth::processBuffer(uintptr_t outputPtr, int bufferSize) {
     float* output = reinterpret_cast<float*>(outputPtr);
-    // Clear output buffer
-    std::fill(output, output + bufferSize, 0.0f);
+    std::fill(output, output + bufferSize * 2, 0.0f);
+    frameCounter++;
+    
+    float monoBuffer[128];  // Assuming max buffer size of 128
     
     for (auto& voice : voices) {
         if (voice.isActive) {
-            voice.processBuffer(output, bufferSize);
+            std::fill(monoBuffer, monoBuffer + bufferSize, 0.0f);
+            voice.processBuffer(monoBuffer, bufferSize);
+            
+            // Apply the voice's fixed panning
+            for (int i = 0; i < bufferSize; i++) {
+                output[i * 2] += monoBuffer[i] * voice.gainLeft;     // Left
+                output[i * 2 + 1] += monoBuffer[i] * voice.gainRight; // Right
+            }
         }
     }
 
     float masterGain = properties["masterGain"];
-
-    // Apply master gain
-    for (int i = 0; i < bufferSize; i++) {
+    for (int i = 0; i < bufferSize * 2; i++) {
         output[i] *= masterGain;
     }
 }
@@ -98,13 +105,23 @@ void PolySynth::noteOn(int m, float velocity) {
         auto& v = voices[i];
         if (!v.isActive && !v.isAborting) {
             v.setProperties(properties);
-            v.noteOn(m, velocity, lastMidiNote);  // Pass the last note for portamento
+            
+            // Calculate time-based panning using autoPanWidth and autoPanRate
+            // float panTime = static_cast<float>(frameCounter) ;  // Convert to seconds
+            float pan = properties["autoPanWidth"] * std::sin(2.0f * M_PI * properties["autoPanRate"] * frameCounter/4410.0f);
+            // Add debug logging
+            // printf("Debug - Pan: %f, Angle: %f, Time: %f\n", pan, pan, panTime);
+            float angle = (pan + 1.0f) * M_PI / 4.0f;
+            v.gainLeft = std::cos(angle);
+            v.gainRight = std::sin(angle);
+            
+            v.noteOn(m, velocity, lastMidiNote);
             v.startTime = voiceCounter++;
             break;
         }
     }
     
-    lastMidiNote = m;  // Update the last played note
+    lastMidiNote = m;
 }
 
 void PolySynth::noteOff(int m) {

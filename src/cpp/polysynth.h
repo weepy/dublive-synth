@@ -22,12 +22,16 @@ private:
     std::vector<Synth> voices;
     std::map<std::string, float> properties = {
         {"masterGain", 1.0f},
-        {"polyphony", 8.0f}  // Default polyphony setting
+        {"polyphony", 8.0f},  // Default polyphony setting
+        {"autoPanWidth", 0.0f},
+        {"autoPanRate", 0.5f}
     };
     std::map<float, std::vector<float>> wavetables;
     float sampleRate;
     int maxVoices;
-    int voiceCounter = 0;  // Add this member variable
-    int lastMidiNote = -1;  // Add this to track the last played note
+    int frameCounter = 0;
+    int voiceCounter = 0;
+    int lastMidiNote = -1;
+    float panPhase = 0.0f;  // Add this for auto-pan
 
 }; 

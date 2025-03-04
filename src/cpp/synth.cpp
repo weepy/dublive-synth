@@ -72,7 +72,7 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
     
     mix = std::clamp(mix, 0.0f, 1.0f);
 
-    float noiseEnabled = properties["noiseEnabled"];
+    
     
     float osc2Enabled = properties["osc2Enabled"];
     
@@ -94,9 +94,12 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
         oscillatorOutput[i] = osc1 * (1.0f - mix) + osc2 * mix;
     }
     
+    // float noiseEnabled = properties["noiseEnabled"];
+    float noiseLevel = properties["noiseLevel"];
+
     // Add noise if enabled
-    if (noiseEnabled > 0.5f) {
-        float noiseLevel = properties["noiseLevel"];
+    if (noiseLevel != 0.0f) {
+        
         float noiseDecay = properties["noiseDecay"];
         float noiseColor = properties["noiseColor"];
 

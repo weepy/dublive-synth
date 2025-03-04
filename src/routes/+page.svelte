@@ -26,6 +26,9 @@
 
     let currentPreset = {}
 
+    // Change this line to use tab instead of group for tab organization
+    let activeTab = 'oscillators'; 
+
     onMount(() => {
         
 
@@ -50,21 +53,24 @@
 
     // Update the reactive statement to handle wavetable changes
     $: if (synthNode && currentPreset) {
-        // Send wavetable if it's a wavetable property
-        const wavetableProps = propertyDescriptors.filter(p => p.type === 'wave');
-        for (const prop of wavetableProps) {
-            if (currentPreset[prop.name]) {
-                sendWavetable(currentPreset[prop.name]);
+        // Create an async function to handle all updates
+        (async () => {
+            // Load wavetables first if needed
+            if (currentPreset.wave1) {
+                await sendWavetable(currentPreset.wave1);
             }
-        }
+            if (currentPreset.wave2) {
+                await sendWavetable(currentPreset.wave2);
+            }
 
-        // Send other properties
-        synthNode.port.postMessage({
-            type: 'properties',
-            properties: currentPreset
-        });
-        
-        localStorage.setItem('currentPreset', JSON.stringify(currentPreset));
+            // Send other properties after wavetables are loaded
+            synthNode.port.postMessage({
+                type: 'properties',
+                properties: currentPreset
+            });
+            
+            localStorage.setItem('currentPreset', JSON.stringify(currentPreset));
+        })();
     }
 
     // Add a cache for loaded wavetables
@@ -119,15 +125,13 @@
     //     }
     //     return ziggyWaves.indexOf(str);
     // }
-    // Update the sendWavetable function
-    async function sendWavetable(index) {
+    // Update the sendWavetable function to return a promise
+    async function sendWavetable(url) {
         if (!synthNode) return;
         
-        let url = ziggyWaves[index] || ziggyWaves[0];
-
-        if(!url) {
+        // Ensure url is valid
+        if (!ziggyWaves.includes(url)) {
             url = ziggyWaves[0];
-            index = 0
         }
 
         // Skip if we've already sent this wavetable
@@ -137,7 +141,7 @@
         
         synthNode.port.postMessage({
             type: 'loadwavetable',
-            key: index,
+            key: url,
             table: wavetable
         }, [wavetable.buffer]);
     }
@@ -158,7 +162,10 @@
         try {
             audioContext = new AudioContext();
             await audioContext.audioWorklet.addModule("/worklets/synth_worklet.js");
-            synthNode = new AudioWorkletNode(audioContext, 'synth-processor');
+            synthNode = new AudioWorkletNode(audioContext, 'synth-processor',{
+                numberOfOutputs: 1,
+                outputChannelCount: [2]  // Specify 2 channels for the output
+            });
             synthNode.connect(audioContext.destination);
 
             if (audioContext.state === 'suspended') {
@@ -190,6 +197,15 @@
     onMount(() => {
         init();
     });
+
+    function next(prop, dir = 1) {
+        const currentUrl = currentPreset[prop];
+        const currentIndex = ziggyWaves.indexOf(currentUrl);
+        const newIndex = (currentIndex + dir + ziggyWaves.length) % ziggyWaves.length;
+        currentPreset[prop] = ziggyWaves[newIndex] || ziggyWaves[0];
+
+        console.log(currentPreset[prop]);
+    }
 </script>
 
 <div class="controls">
@@ -197,67 +213,294 @@
         {isPlaying ? 'Stop' : 'Play'}
     </button>
     
+    <div class="tabs">
+        <button class="tab-button" class:active={activeTab === 'oscillators'} on:click={() => activeTab = 'oscillators'}>
+            OSCILLATORS
+        </button>
+        <button class="tab-button" class:active={activeTab === 'filter'} on:click={() => activeTab = 'filter'}>
+            FILTER
+        </button>
+        <button class="tab-button" class:active={activeTab === 'envelope'} on:click={() => activeTab = 'envelope'}>
+            ENVELOPE
+        </button>
+        <button class="tab-button" class:active={activeTab === 'modulation'} on:click={() => activeTab = 'modulation'}>
+            LFO
+        </button>
+        <button class="tab-button" class:active={activeTab === 'noise'} on:click={() => activeTab = 'noise'}>
+            NOISE
+        </button>
+        <button class="tab-button" class:active={activeTab === 'master'} on:click={() => activeTab = 'master'}>
+            MASTER
+        </button>
+    </div>
 
-    {#each [...new Set(propertyDescriptors.map(p => p.group))] as group}
+    {#if activeTab === 'oscillators'}
         <div class="control-group">
-            <h3>{group.toUpperCase()}</h3>
             <div class="group-controls">
-                {#each propertyDescriptors.filter(p => p.group === group) as prop}
-                    <label>
-                        {prop.name}:
-                        {#if prop.type == 'select'}
-                            <select bind:value={currentPreset[prop.name]}>
-                                {#each prop.options as option, index}
-                                    <option value={index}>{option}</option>
-                                {/each}
-                            </select>
-                        {:else if prop.type == "number"}
-                            <input type="number" 
-                                bind:value={currentPreset[prop.name]} 
-                                min={prop.min} 
-                                max={prop.max} 
-                                step={prop.step}>
-                        {:else if prop.type == "range"}
-                            <input type="range" 
-                                bind:value={currentPreset[prop.name]} 
-                                min={prop.min} 
-                                max={prop.max} 
-                                step={prop.step}>
-                            <span class="value-display">
-                                {(currentPreset[prop.name] ?? 0).toFixed(2)}
-                            </span>
-                        {:else if prop.type == "toggle"}
-                            <select bind:value={currentPreset[prop.name]}>
-                                {#each prop.options as option, index}
-                                    <option value={index}>{option}</option>
-                                {/each}
-                            </select>
-                        {:else if prop.type == 'wave'}
-                            <div class="wave-selector">
-                                <button class="wave-btn" on:click={() => {
-                                    const newIndex = (currentPreset[prop.name] - 1 + prop.options.length) % prop.options.length;
-                                    currentPreset[prop.name] = newIndex;
-                                }}>←</button>
-                                
-                                <select bind:value={currentPreset[prop.name]}>
-                                    {#each prop.options as option, index}
-                                        <option value={index}>
-                                            {option.split('/').pop().replace('.L.ogg', '')}
-                                        </option>
-                                    {/each}
-                                </select>
+                <!-- <h3>Oscillator 1</h3> -->
+                <label>
+                    Wave 1:
+                    <div class="wave-selector">
+                        <button class="wave-btn" on:click={() => next('wave1', -1)}>←</button>
+                        <select bind:value={currentPreset.wave1}>
+                            {#each ziggyWaves as url}
+                                <option value={url}>
+                                    {url.split('/').pop().replace(/\..*$/, '').replace(/[-_]/g, ' ')}
+                                </option>
+                            {/each}
+                        </select>
+                        <button class="wave-btn" on:click={() => next('wave1', 1)}>→</button>
+                    </div>
+                </label>
+                <label>
+                    Pitch 1:
+                    <div class="pitch-control">
+                        <input type="number" bind:value={currentPreset.oct1} min={-4} max={4} step={1} title="Octave">
+                        <input type="number" bind:value={currentPreset.semi1} min={-12} max={12} step={1} title="Semitones">
+                        <input type="number" bind:value={currentPreset.cent1} min={-100} max={100} step={1} title="Cents">
+                    </div>
+                </label>
 
-                                <button class="wave-btn" on:click={() => {
-                                    const newIndex = (currentPreset[prop.name] + 1) % prop.options.length;
-                                    currentPreset[prop.name] = newIndex;
-                                }}>→</button>
-                            </div>
-                        {/if}
-                    </label>
-                {/each}
+                <h3></h3>
+                <label>
+                    Enable:
+                    <select bind:value={currentPreset.osc2Enabled}>
+                        <option value={0}>Off</option>
+                        <option value={1}>On</option>
+                    </select>
+                </label>
+                <label>
+                    Wave 2:
+                    <div class="wave-selector">
+                        <button class="wave-btn" on:click={() => next('wave2', -1)}>←</button>
+                        <select bind:value={currentPreset.wave2}>
+                            {#each ziggyWaves as url}
+                                <option value={url}>
+                                    {url.split('/').pop().replace(/\..*$/, '').replace(/[-_]/g, ' ')}
+                                </option>
+                            {/each}
+                        </select>
+                        <button class="wave-btn" on:click={() => next('wave2', 1)}>→</button>
+                    </div>
+                </label>
+                <label>
+                    Pitch 2:
+                    <div class="pitch-control">
+                        <input type="number" bind:value={currentPreset.oct2} min={-4} max={4} step={1} title="Octave">
+                        <input type="number" bind:value={currentPreset.semi2} min={-12} max={12} step={1} title="Semitones">
+                        <input type="number" bind:value={currentPreset.cent2} min={-100} max={100} step={1} title="Cents">
+                    </div>
+                </label>
+
+                <h3></h3>
+                <label>
+                    Mix:
+                    <input type="range" bind:value={currentPreset.mix} min={0} max={1} step={0.001}>
+                    <span class="value-display">{(currentPreset.mix ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    FM Amount:
+                    <input type="range" bind:value={currentPreset.fmAmount} min={0} max={1} step={0.01}>
+                    <span class="value-display">{(currentPreset.fmAmount ?? 0).toFixed(2)}</span>
+                </label>
             </div>
         </div>
-    {/each}
+    {/if}
+
+    
+    {#if activeTab === 'filter'}
+        <div class="control-group">
+            <div class="group-controls">
+                
+                <label>
+                    Type:
+                    <select bind:value={currentPreset.filterType}>
+                        <option value={0}>Lowpass 24</option>
+                        <option value={1}>Lowpass</option>
+                        <option value={2}>Highpass</option>
+                        <option value={3}>Bandpass</option>
+                        <option value={4}>Notch</option>
+                    </select>
+                </label>
+                <label>
+                    Cutoff:
+                    <input type="range" bind:value={currentPreset.cutoff} min={0} max={1} step={0.01}>
+                    <span class="value-display">{(currentPreset.cutoff ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Resonance:
+                    <input type="range" bind:value={currentPreset.resonance} min={0.1} max={10} step={0.01}>
+                    <span class="value-display">{(currentPreset.resonance ?? 0).toFixed(2)}</span>
+                </label>
+
+                <h3></h3>
+                <label>
+                    Attack:
+                    <input type="range" bind:value={currentPreset.filterAttack} min={0} max={2} step={0.01}>
+                    <span class="value-display">{(currentPreset.filterAttack ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Decay:
+                    <input type="range" bind:value={currentPreset.filterDecay} min={0} max={2} step={0.01}>
+                    <span class="value-display">{(currentPreset.filterDecay ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Sustain:
+                    <input type="range" bind:value={currentPreset.filterSustain} min={0} max={1} step={0.01}>
+                    <span class="value-display">{(currentPreset.filterSustain ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Release:
+                    <input type="range" bind:value={currentPreset.filterRelease} min={0} max={2} step={0.01}>
+                    <span class="value-display">{(currentPreset.filterRelease ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Envelope Amount:
+                    <input type="range" bind:value={currentPreset.filterEnvAmount} min={-1} max={1} step={0.01}>
+                    <span class="value-display">{(currentPreset.filterEnvAmount ?? 0).toFixed(2)}</span>
+                </label>
+            </div>
+        </div>
+    {/if}
+
+    {#if activeTab === 'envelope'}
+        <div class="control-group">
+            <div class="group-controls">
+                <!-- <h3>Amplitude Envelope</h3> -->
+                <label>
+                    Attack:
+                    <input type="range" bind:value={currentPreset.ampAttack} min={0} max={2} step={0.01}>
+                    <span class="value-display">{(currentPreset.ampAttack ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Decay:
+                    <input type="range" bind:value={currentPreset.ampDecay} min={0} max={2} step={0.01}>
+                    <span class="value-display">{(currentPreset.ampDecay ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Sustain:
+                    <input type="range" bind:value={currentPreset.ampSustain} min={0} max={1} step={0.01}>
+                    <span class="value-display">{(currentPreset.ampSustain ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Release:
+                    <input type="range" bind:value={currentPreset.ampRelease} min={0} max={2} step={0.01}>
+                    <span class="value-display">{(currentPreset.ampRelease ?? 0).toFixed(2)}</span>
+                </label>
+            </div>
+        </div>
+    {/if}
+
+    {#if activeTab === 'modulation'}
+        <div class="control-group">
+            <div class="group-controls">
+                <!-- <h3>LFO</h3> -->
+                <label>
+                    Waveform:
+                    <select bind:value={currentPreset.lfoWaveform}>
+                        <option value={0}>Triangle</option>
+                        <option value={1}>Sawtooth</option>
+                        <option value={2}>Square</option>
+                        <option value={3}>Sample & Hold</option>
+                        <option value={4}>Sine</option>
+                    </select>
+                </label>
+                <label>
+                    Retrigger:
+                    <select bind:value={currentPreset.lfoRetrigger}>
+                        <option value={0}>Off</option>
+                        <option value={1}>On</option>
+                    </select>
+                </label>
+                <label>
+                    Rate:
+                    <input type="range" bind:value={currentPreset.lfoRate} min={0} max={1} step={0.01}>
+                    <span class="value-display">{(currentPreset.lfoRate ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Amount:
+                    <input type="range" bind:value={currentPreset.lfoAmount} min={0} max={1} step={0.01}>
+                    <span class="value-display">{(currentPreset.lfoAmount ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Fade In:
+                    <input type="range" bind:value={currentPreset.lfoFadeIn} min={0} max={2} step={0.01}>
+                    <span class="value-display">{(currentPreset.lfoFadeIn ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Destination:
+                    <select bind:value={currentPreset.lfoDestination}>
+                        <option value={0}>Oscillators</option>
+                        <option value={1}>Filter</option>
+                        <option value={2}>FM</option>
+                        <option value={3}>Mix</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+    {/if}
+
+    {#if activeTab === 'noise'}
+        <div class="control-group">
+            <div class="group-controls">
+                <label>
+                    Level:
+                    <input type="range" bind:value={currentPreset.noiseLevel} min={0} max={1} step={0.001}>
+                    <span class="value-display">{(currentPreset.noiseLevel ?? 0).toFixed(3)}</span>
+                </label>
+                <!-- <h3>Noise</h3> -->
+                <!-- <label>
+                    Enable:
+                    <select bind:value={currentPreset.noiseEnabled}>
+                        <option value={0}>Off</option>
+                        <option value={1}>On</option>
+                    </select>
+                </label> -->
+                <label>
+                    Decay:
+                    <input type="range" bind:value={currentPreset.noiseDecay} min={0} max={1} step={0.001}>
+                    <span class="value-display">{(currentPreset.noiseDecay ?? 0).toFixed(3)}</span>
+                </label>
+                <label>
+                    Color:
+                    <input type="range" bind:value={currentPreset.noiseColor} min={0} max={1} step={0.001}>
+                    <span class="value-display">{(currentPreset.noiseColor ?? 0).toFixed(3)}</span>
+                </label>
+                
+            </div>
+        </div>
+    {/if}
+
+    {#if activeTab === 'master'}
+        <div class="control-group">
+            <div class="group-controls">
+                <label>
+                    Portamento:
+                    <input type="range" bind:value={currentPreset.portamento} min={0} max={2} step={0.01}>
+                    <span class="value-display">{(currentPreset.portamento ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Panning:
+                    <input type="range" bind:value={currentPreset.autoPanWidth} min={0} max={1} step={0.01}>
+                    <span class="value-display">{(currentPreset.autoPanWidth ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Pan Rate:
+                    <input type="range" bind:value={currentPreset.autoPanRate} min={0} max={10} step={0.01}>
+                    <span class="value-display">{(currentPreset.autoPanRate ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Gain:
+                    <input type="range" bind:value={currentPreset.masterGain} min={0} max={1} step={0.01}>
+                    <span class="value-display">{(currentPreset.masterGain ?? 0).toFixed(2)}</span>
+                </label>
+                <label>
+                    Polyphony:
+                    <input type="number" bind:value={currentPreset.polyphony} min={1} max={8} step={1}>
+                </label>
+            </div>
+        </div>
+    {/if}
 </div>
 
 <Keyboard 
@@ -380,5 +623,47 @@
 
     .wave-selector select {
         flex: 1;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 20px;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .tab-button {
+        padding: 8px 16px;
+        border: none;
+        background: #f0f0f0;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+    }
+
+    .tab-button:hover {
+        background: #e0e0e0;
+    }
+
+    .tab-button.active {
+        background: #4CAF50;
+        color: white;
+    }
+
+    .control-group {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .pitch-control {
+        display: flex;
+        gap: 4px;
+    }
+
+    .pitch-control input[type="number"] {
+        width: 60px;
+        text-align: center;
     }
 </style> 

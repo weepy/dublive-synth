@@ -138,6 +138,14 @@ public:
     std::map<float, std::vector<float>>* wavetables = nullptr;  // Pointer to wavetables map
     void abort();  // Add this declaration
 
+    float gainLeft = 0.707f;  // Default to center (-3dB)
+    float gainRight = 0.707f;
+    
+    // void setPanning(float left, float right) {
+    //     gainLeft = left;
+    //     gainRight = right;
+    // }
+
 private:
     // Add these new member variables for noise generator
     float noiseValue = 0.0f;
@@ -193,7 +201,7 @@ private:
         {"noiseDecay", 0.1f},
         {"noiseColor", 1.0f},  // 0 = dark, 1 = bright
         {"noiseLevel", 0.0f},
-        {"noiseEnabled", 0.0f},
+        // {"noiseEnabled", 0.0f},
     };
 
     float sampleRate;
