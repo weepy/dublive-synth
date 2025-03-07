@@ -1,4 +1,4 @@
-import {waves,impacts} from './waves';
+import {waves} from './waves';
 
 export const propertyDescriptors = [
     {
@@ -104,13 +104,51 @@ export const propertyDescriptors = [
     //     options: ['Off', 'Subtraction', 'Multiplication']
     // },
 
-    // Add after the OSC 2 section and before the Mix section
+    // OSC 3
+    {
+        name: 'osc3Enabled',
+        value: 0,
+        type: 'toggle',
+        options: ['Off', 'On']
+    },
     {
         name: 'wave3',
-        value: impacts[0],
+        value: "/waves/fav/brown.ogg",
         type: 'wave',
         options: waves
     },
+    {
+        name: 'oct3',
+        value: 0,
+        type: "number",
+        step: 1,
+    },
+    {
+        name: 'semi3',
+        type: "number",
+        value: 0,
+        min: -12,
+        max: 12,
+        step: 1,
+    },
+    {
+        name: 'cent3',
+        type: "number",
+        value: 0,
+        min: -100,
+        max: 100,
+        step: 1,
+    },
+    {
+        name: 'wave3Mix',
+        value: 0,
+        min: 0,
+        max: 1,
+        step: 0.001,
+        type: 'range'
+    },
+
+    // Add after the OSC 2 section and before the Mix section
     {
         name: 'wave3Level',
         value: 0,
@@ -152,6 +190,14 @@ export const propertyDescriptors = [
         value: 0,
         type: 'select',
         options: ['Lowpass 24', 'Lowpass', 'Highpass', 'Bandpass', 'Notch']
+    },
+    {
+        name: 'filterKeyTracking',
+        value: 1.0,
+        min: 0,
+        max: 2,
+        step: 0.01,
+        type: 'range'
     },
     {
         name: 'cutoff',
@@ -271,7 +317,7 @@ export const propertyDescriptors = [
         name: "lfoAmount",
         type: "range",
         value: 0,
-        min: 0,
+        min: -1,
         max: 1,
         step: 0.01
     },
@@ -381,4 +427,22 @@ export const propertyDescriptors = [
     //     type: 'range',
     //     group: 'effects'
     // }
+
+    // Add these to the master section properties
+    {
+        name: 'distortionAmount',
+        value: 0,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        type: 'range'
+    },
+    // {
+    //     name: 'distortionCharacter',
+    //     value: 0,
+    //     min: 0,
+    //     max: 1,
+    //     step: 0.01,
+    //     type: 'range'
+    // },
 ];

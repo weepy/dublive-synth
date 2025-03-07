@@ -4,7 +4,13 @@
     
     let activeKeys = new Set();
 
-    let currentOctave = 4;
+    // Initialize currentOctave from localStorage or default to 4
+    let currentOctave = parseInt(localStorage.getItem('currentOctave')) || 2;
+
+    // Update localStorage when currentOctave changes
+    $: {
+        localStorage.setItem('currentOctave', currentOctave);
+    }
 
     const keyboardLayout = [
         { note: 0, key: 'A', type: 'white' },

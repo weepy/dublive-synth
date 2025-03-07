@@ -116,7 +116,7 @@ public:
         Saw
     };
 
-    Synth(float sampleRate = 44100.0f, std::map<float, std::vector<float>>* wavetables = nullptr);
+    Synth(float sampleRate = 44100.0f, std::map<float, std::map<int, std::vector<float>>>* wavetables = nullptr);
     
     // float process();
     void processBuffer(float* buffer, int bufferSize);
@@ -135,7 +135,6 @@ public:
     float wavetableKey = 0.0f;
     float releaseStartLevel = 0.0f;
     int startTime = 0;
-    std::map<float, std::vector<float>>* wavetables = nullptr;  // Pointer to wavetables map
     void abort();  // Add this declaration
 
     float gainLeft = 0.707f;  // Default to center (-3dB)
@@ -145,6 +144,14 @@ public:
     //     gainLeft = left;
     //     gainRight = right;
     // }
+
+    void setWavetable1(const std::vector<float>* table) { currentWavetable1 = table; }
+    void setWavetable2(const std::vector<float>* table) { currentWavetable2 = table; }
+    void setWavetable3(const std::vector<float>* table) { currentWavetable3 = table; }
+    
+    // Remove the separate methods for setting wavetable properties
+    // void setWavetable1Properties(float tune, bool loop);
+    // void setWavetable2Properties(float tune, bool loop);
 
 private:
     // Add these new member variables for noise generator
@@ -173,6 +180,7 @@ private:
         // Filter parameters
         {"cutoff", 1000.0f},
         {"resonance", 0.0f},
+        {"filterKeyTracking", 1.0f},  // Add this new property
         
         // Oscillator parameters
         {"wave1", 0.0f},
@@ -181,14 +189,23 @@ private:
         {"wave2", 0.0f},
         {"phaseOffset2", 0.0f},
         {"phaseMode2", 0.0f},
+        {"wave3", 0.0f},
+        {"phaseOffset3", 0.0f},
+        {"phaseMode3", 0.0f},
         {"oct1", 0.0f},
         {"oct2", 0.0f},
+        {"oct3", 0.0f},
         {"semi1", 0.0f},
         {"semi2", 0.0f},
+        {"semi3", 0.0f},
         {"cent1", 0.0f},
         {"cent2", 0.0f},
+        {"cent3", 0.0f},
         {"fmAmount", 0.0f},
         {"mix", 0.5f},
+        {"wave3Mix", 0.0f},
+        {"osc2Enabled", 1.0f},
+        {"osc3Enabled", 0.0f},
         
         // Simplified LFO parameters
         {"lfoSync", 0.0f},      // 0 = free, 1 = sync
@@ -205,14 +222,22 @@ private:
         // {"noiseEnabled", 0.0f},
         
         // Add new wave3 parameters
-        {"wave3", 0.0f},
         {"wave3Decay", 0.1f},
         {"wave3Level", 0.0f},
+        
+        // Update these property names
+        {"tune1", 0.0f},
+        {"tune2", 0.0f},
+        {"tune3", 0.0f},
+        {"loop1", 1.0f},
+        {"loop2", 1.0f},
+        {"loop3", 1.0f},
     };
 
     float sampleRate;
-    float phase1 = 0.0f;  // Phase for oscillator 1
-    float phase2 = 0.0f;  // Phase for oscillator 2
+    float pos1 = 0.0f;  // Position for oscillator 1 (renamed from phase1)
+    float pos2 = 0.0f;  // Position for oscillator 2 (renamed from phase2)
+    float pos3 = 0.0f;  // Position for oscillator 3 (renamed from phase3)
     float envLevel = 0.f;
     float frequency = 440.0f;
     float velocity = 0.0f;
@@ -222,11 +247,11 @@ private:
     // std::vector<float> wavetable;
     // size_t wavetableSize = 0;
     
-    const std::vector<float>* wave1 = nullptr;
-    const std::vector<float>* wave2 = nullptr;
-    const std::vector<float>* wave3 = nullptr;
+    const std::vector<float>* currentWavetable1 = nullptr;
+    const std::vector<float>* currentWavetable2 = nullptr;
+    const std::vector<float>* currentWavetable3 = nullptr;
     
-    float processOscillator(const std::vector<float>* wave, float phaseOffset, int phaseMode, float freq, float& phase);
+    float processOscillator(const float* wavetableData, int wavetableSize, float freq, float& pos, bool shouldLoop);
     float processEnvelope();
     void processFilter(float* input, int numSamples, float cutoff01);
     void updateWavetable();
@@ -275,10 +300,12 @@ private:
 
     float targetFrequency = 440.0f;
     float currentFrequency = 440.0f;
-    float currentFreq1 = 440.0f;
-    float currentFreq2 = 440.0f;
-    float targetFreq1 = 440.0f;
-    float targetFreq2 = 440.0f;
+    float currentFreq1 = 261.63f;
+    float currentFreq2 = 261.63f;
+    float currentFreq3 = 261.63f;
+    float targetFreq1 = 261.63f;
+    float targetFreq2 = 261.63f;
+    float targetFreq3 = 261.63f;
     float portamentoTime = 0.0f;
     float stateTime = 0.0f;  // Replace both noiseTime and portamentoStartTime
 
@@ -287,8 +314,19 @@ private:
     void processBitcrusher(float* input, int numSamples, float bitcrushAmount, float sampleReduction);
 
     // Add new member variables
-    float pos3 = 0.0f;
+    
     bool wave3Playing = false;
+
+    // Add these member variables
+    const std::map<int, std::vector<float>>* currentWave1 = nullptr;
+    const std::map<int, std::vector<float>>* currentWave2 = nullptr;
+
+    void processDistortion(float* input, int numSamples, float amount, float character);
+
+    // Add these new member variables to store loop state
+    bool isLooping1 = true;
+    bool isLooping2 = true;
+    bool isLooping3 = true;
 };
 
 #endif 

@@ -26,7 +26,7 @@ private:
         {"autoPanWidth", 0.0f},
         {"autoPanRate", 0.5f}
     };
-    std::map<float, std::vector<float>> wavetables;
+    std::map<float, std::map<int, std::vector<float>>> wavetables;
     float sampleRate;
     int maxVoices;
     int frameCounter = 0;

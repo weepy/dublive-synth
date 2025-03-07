@@ -3,7 +3,7 @@
     import Keyboard from '$lib/components/Keyboard.svelte';
     import SavePatchDialog from '$lib/components/SavePatchDialog.svelte';
 
-    import {waves,impacts} from '$lib/ziggy/waves.js';
+    import {waves} from '$lib/ziggy/waves.js';
 
     let synth;
     let audioContext;
@@ -19,7 +19,7 @@
     // let release = 0.9;
     let synthNode;
 
-    const SHOW_WAVE3 = false
+    const SHOW_WAVE3 = true
 
     // Track active keys
     // let activeKeys = new Set();
@@ -131,27 +131,31 @@
         const audioBuffer = await decodeAudioDataAny("audio/ogg", arrayBuffer, audioContext);
         
         // Convert audio buffer to wavetable (using first channel)
-        
         const data = audioBuffer.getChannelData(0);
         
-        // const wavetable = new Float32Array(2048);
-
-        // // Resample to 2048 points using linear interpolation
-        // for (let i = 0; i < 2048; i++) {
-        //     const position = (i / 2048) * data.length - 1); // Adjust position calculation
-        //     const index1 = Math.floor(position);
-        //     const index2 = Math.min(index1 + 1, data.length - 1);
-        //     const fraction = position - index1;
-            
-        //     wavetable[i] = (1 - fraction) * data[index1] + fraction * data[index2]; // Clearer lerp formula
-        // }
+        const WAVETABLE_SIZE = 1348;
         
+        let wavetable;
+        
+        // For larger samples, use the original data directly
+        if (data.length >= 10000) {
+            wavetable = data;  // Use the original data directly
+        } else {
+            // For smaller samples, resample to the nearest multiple of 1348
+            const multiplier = Math.max(1, Math.round(data.length / WAVETABLE_SIZE));
+            const finalSize = WAVETABLE_SIZE * multiplier;
+            
+            wavetable = new Float32Array(finalSize);
+            
+            // Resample using linear interpolation with wrapping
+            for (let i = 0; i < finalSize; i++) {
+                const position = (i / finalSize) * data.length;
+                const index1 = Math.floor(position) % data.length;
+                const index2 = (index1 + 1) % data.length; // Wrap around to the beginning
+                const fraction = position - Math.floor(position);
                 
-        const wavetable = new Float32Array(data.length);
-        // Resample to 2048 points
-        for (let i = 0; i < data.length; i++) {
-            // const index = Math.floor((i / 2048) * data.length);
-            wavetable[i] = data[i];
+                wavetable[i] = (1 - fraction) * data[index1] + fraction * data[index2];
+            }
         }
 
         wavetableCache.set(url, wavetable);
@@ -173,21 +177,75 @@
 
         console.log("sendWavetable", url)
         
-        // Ensure url is valid
-        // if (!waves.includes(url)) {
-        //     url = waves[0];
-        // }
-
+        // Find the wave object with matching URL
+        const waveObj = waves.find(w => w.url === url) || { tune: 0, loop: 1 };
+        
         // Skip if we've already sent this wavetable
-        if (wavetableCache.has(url)) return;
+        if (wavetableCache.has(url)) {
+            // Update property names
+            if (currentPreset.wave1 === url) {
+                synthNode.port.postMessage({
+                    type: 'properties',
+                    properties: {
+                        tune1: waveObj.tune,
+                        loop1: waveObj.loop
+                    }
+                });
+            } else if (currentPreset.wave2 === url) {
+                synthNode.port.postMessage({
+                    type: 'properties',
+                    properties: {
+                        tune2: waveObj.tune,
+                        loop2: waveObj.loop
+                    }
+                });
+            } else if (currentPreset.wave3 === url) {
+                synthNode.port.postMessage({
+                    type: 'properties',
+                    properties: {
+                        tune3: waveObj.tune,
+                        loop3: waveObj.loop
+                    }
+                });
+            }
+            return;
+        }
 
         const wavetable = await loadWavetableFromUrl(url);
         
+        // Send the wavetable data
         synthNode.port.postMessage({
             type: 'loadwavetable',
             key: url,
             table: wavetable
         }, [wavetable.buffer]);
+        
+        // Update property names
+        if (currentPreset.wave1 === url) {
+            synthNode.port.postMessage({
+                type: 'properties',
+                properties: {
+                    tune1: waveObj.tune,
+                    loop1: waveObj.loop
+                }
+            });
+        } else if (currentPreset.wave2 === url) {
+            synthNode.port.postMessage({
+                type: 'properties',
+                properties: {
+                    tune2: waveObj.tune,
+                    loop2: waveObj.loop
+                }
+            });
+        } else if (currentPreset.wave3 === url) {
+            synthNode.port.postMessage({
+                type: 'properties',
+                properties: {
+                    tune3: waveObj.tune,
+                    loop3: waveObj.loop
+                }
+            });
+        }
     }
 
     function handleNoteOn(note, keyElement) {
@@ -356,7 +414,7 @@
                         <div class="wave-selector">
                             <button class="wave-btn" on:click={() => next('wave1', waves,-1)}>←</button>
                             <select bind:value={currentPreset.wave1}>
-                                {#each waves as url}
+                                {#each waves as {url}}
                                     <option value={url}>
                                         {url.split('/').pop().replace(/\..*$/, '').replace(/[-_]/g, ' ')}
                                     </option>
@@ -387,7 +445,7 @@
                         <div class="wave-selector">
                             <button class="wave-btn" on:click={() => next('wave2', waves,-1)}>←</button>
                             <select bind:value={currentPreset.wave2}>
-                                {#each waves as url}
+                                {#each waves as {url}}
                                     <option value={url}>
                                         {url.split('/').pop().replace(/\..*$/, '').replace(/[-_]/g, ' ')}
                                     </option>
@@ -408,17 +466,32 @@
                    {#if SHOW_WAVE3}
                    <h3></h3>
                    <label>
+                       Enable:
+                       <select bind:value={currentPreset.osc3Enabled}>
+                           <option value={0}>Off</option>
+                           <option value={1}>On</option>
+                       </select>
+                   </label>
+                   <label>
                        Wave 3:
                        <div class="wave-selector">
-                           <button class="wave-btn" on:click={() => next('wave3',impacts, -1)}>←</button>
+                           <button class="wave-btn" on:click={() => next('wave3',waves, -1)}>←</button>
                            <select bind:value={currentPreset.wave3}>
-                               {#each impacts as url}
+                               {#each waves as {url}}
                                    <option value={url}>
                                        {url.split('/').pop().replace(/\..*$/, '').replace(/[-_]/g, ' ')}
                                    </option>
                                {/each}
                            </select>
-                           <button class="wave-btn" on:click={() => next('wave3',impacts, 1)}>→</button>
+                           <button class="wave-btn" on:click={() => next('wave3',waves, 1)}>→</button>
+                       </div>
+                   </label>
+                   <label>
+                       Pitch 3:
+                       <div class="pitch-control">
+                           <input type="number" bind:value={currentPreset.oct3} min={-4} max={4} step={1} title="Octave">
+                           <input type="number" bind:value={currentPreset.semi3} min={-12} max={12} step={1} title="Semitones">
+                           <input type="number" bind:value={currentPreset.cent3} min={-100} max={100} step={1} title="Cents">
                        </div>
                    </label>
                    {/if}
@@ -444,6 +517,11 @@
                         <input type="range" bind:value={currentPreset.fmAmount} min={0} max={1} step={0.01}>
                         <span class="value-display">{(currentPreset.fmAmount ?? 0).toFixed(2)}</span>
                     </label>
+                    <label>
+                        Wave 3 Mix:
+                        <input type="range" bind:value={currentPreset.wave3Mix} min={0} max={1} step={0.001}>
+                        <span class="value-display">{(currentPreset.wave3Mix ?? 0).toFixed(2)}</span>
+                    </label>
                 </div>
             </div>
         {/if}
@@ -467,6 +545,11 @@
                         Cutoff:
                         <input type="range" bind:value={currentPreset.cutoff} min={0} max={1} step={0.01}>
                         <span class="value-display">{(currentPreset.cutoff ?? 0).toFixed(2)}</span>
+                    </label>
+                    <label>
+                        Key Tracking:
+                        <input type="range" bind:value={currentPreset.filterKeyTracking} min={0} max={2} step={0.01}>
+                        <span class="value-display">{(currentPreset.filterKeyTracking ?? 1).toFixed(2)}</span>
                     </label>
                     <label>
                         Resonance:
@@ -560,7 +643,7 @@
                     </label>
                     <label>
                         Amount:
-                        <input type="range" bind:value={currentPreset.lfoAmount} min={0} max={1} step={0.01}>
+                        <input type="range" bind:value={currentPreset.lfoAmount} min={-1} max={1} step={0.01}>
                         <span class="value-display">{(currentPreset.lfoAmount ?? 0).toFixed(2)}</span>
                     </label>
                     <label>
@@ -639,6 +722,16 @@
                         Polyphony:
                         <input type="number" bind:value={currentPreset.polyphony} min={1} max={8} step={1}>
                     </label>
+                    <label>
+                        Distortion:
+                        <input type="range" bind:value={currentPreset.distortionAmount} min={0} max={1} step={0.01}>
+                        <span class="value-display">{(currentPreset.distortionAmount ?? 0).toFixed(2)}</span>
+                    </label>
+                    <!-- <label>
+                        Character:
+                        <input type="range" bind:value={currentPreset.distortionCharacter} min={0} max={1} step={0.01}>
+                        <span class="value-display">{(currentPreset.distortionCharacter ?? 0).toFixed(2)}</span>
+                    </label> -->
                 </div>
             </div>
         {/if}
