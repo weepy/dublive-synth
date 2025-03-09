@@ -327,6 +327,8 @@ private:
     bool isLooping1 = true;
     bool isLooping2 = true;
     bool isLooping3 = true;
+
+    float calculateFrequency(int midiNote, float semi, float cent, float oct, float tune);
 };
 
 #endif 

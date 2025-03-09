@@ -119,7 +119,7 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
     
     // Process wavetable3 if enabled (replacing noise)
     float wave3Level = properties["wave3Level"];
-    if (wave3Level > 0.0f && currentWavetable3 && wave3Playing) {
+    if (properties["osc3Enabled"] > 0.5f && wave3Level > 0.0f && currentWavetable3 && wave3Playing) {
         float wave3Decay = properties["wave3Decay"];
         
         // Square the parameters for more intuitive control
@@ -150,6 +150,7 @@ void Synth::processBuffer(float* buffer, int bufferSize) {
         }
     }
     
+    processDistortion(oscillatorOutput.data(), bufferSize, properties["distortion"], 0);
     // Process filter after bitcrusher
     processFilter(oscillatorOutput.data(), bufferSize, modulatedCutoff);
     
@@ -256,6 +257,20 @@ float Synth::processOscillator(const float* wavetableData, int wavetableSize, fl
     return sample;
 }
 
+float Synth::calculateFrequency(int midiNote, float semi, float cent, float oct, float tune) {
+    // Special case: if tune is -999, return fixed frequency of 261.63 Hz (C4)
+    if (tune == -999.0f) {
+        return 261.63f;
+    }
+    
+    // Normal calculation
+    return 261.63f * std::pow(2.0f, 
+        (midiNote - 60 + semi + 
+         cent / 100.0f + 
+         oct * 12.0f + 
+         tune) / 12.0f);
+}
+
 void Synth::noteOn(int m, float vel, int fromMidiNote) {
     midiNote = m;
     velocity = vel;
@@ -284,47 +299,44 @@ void Synth::noteOn(int m, float vel, int fromMidiNote) {
         lastLfoPhase = 0.0f;
     }
     
-    // Calculate frequencies based on MIDI note (C4 = 60)
-    // C4 (261.63 Hz) is our reference note for 1:1 playback
-    targetFreq1 = 261.63f * std::pow(2.0f, 
-        (midiNote - 60 + properties["semi1"] + 
-         properties["cent1"] / 100.0f + 
-         properties["oct1"] * 12.0f + 
-         properties["tune1"]) / 12.0f);
+    // Calculate frequencies using the new helper function
+    targetFreq1 = calculateFrequency(midiNote, 
+                                    properties["semi1"], 
+                                    properties["cent1"], 
+                                    properties["oct1"], 
+                                    properties["tune1"]);
     
-    targetFreq2 = 261.63f * std::pow(2.0f, 
-        (midiNote - 60 + properties["semi2"] + 
-         properties["cent2"] / 100.0f + 
-         properties["oct2"] * 12.0f + 
-         properties["tune2"]) / 12.0f);
+    targetFreq2 = calculateFrequency(midiNote, 
+                                    properties["semi2"], 
+                                    properties["cent2"], 
+                                    properties["oct2"], 
+                                    properties["tune2"]);
     
-    targetFreq3 = 261.63f * std::pow(2.0f, 
-        (midiNote - 60 + properties["semi3"] + 
-         properties["cent3"] / 100.0f + 
-         properties["oct3"] * 12.0f + 
-         properties["tune3"]) / 12.0f);
+    targetFreq3 = calculateFrequency(midiNote, 
+                                    properties["semi3"], 
+                                    properties["cent3"], 
+                                    properties["oct3"], 
+                                    properties["tune3"]);
     
     if (fromMidiNote >= 0 && portamentoTime > 0.0f) {
         // Set starting frequencies from the previous note
-        // Use properties["tune1"] instead of wave1Tune
-        currentFreq1 = 261.63f * std::pow(2.0f, 
-            (fromMidiNote - 60 + properties["semi1"] + 
-             properties["cent1"] / 100.0f + 
-             properties["oct1"] * 12.0f + 
-             properties["tune1"]) / 12.0f);
+        currentFreq1 = calculateFrequency(fromMidiNote, 
+                                         properties["semi1"], 
+                                         properties["cent1"], 
+                                         properties["oct1"], 
+                                         properties["tune1"]);
         
-        // Use properties["tune2"] instead of wave2Tune
-        currentFreq2 = 261.63f * std::pow(2.0f, 
-            (fromMidiNote - 60 + properties["semi2"] + 
-             properties["cent2"] / 100.0f + 
-             properties["oct2"] * 12.0f + 
-             properties["tune2"]) / 12.0f);
+        currentFreq2 = calculateFrequency(fromMidiNote, 
+                                         properties["semi2"], 
+                                         properties["cent2"], 
+                                         properties["oct2"], 
+                                         properties["tune2"]);
         
-        currentFreq3 = 261.63f * std::pow(2.0f, 
-            (fromMidiNote - 60 + properties["semi3"] + 
-             properties["cent3"] / 100.0f + 
-             properties["oct3"] * 12.0f + 
-             properties["tune3"]) / 12.0f);
+        currentFreq3 = calculateFrequency(fromMidiNote, 
+                                         properties["semi3"], 
+                                         properties["cent3"], 
+                                         properties["oct3"], 
+                                         properties["tune3"]);
     } else {
         currentFreq1 = targetFreq1;
         currentFreq2 = targetFreq2;
@@ -454,21 +466,25 @@ void Synth::processBitcrusher(float* input, int numSamples, float bitcrushAmount
 
 void Synth::processDistortion(float* input, int numSamples, float amount, float character) {
     // Pre-calculate gain and attenuation to avoid repeated calculations
-    // amount = amount*amount*4.f;
     float gain = 1.0f + amount * 8.0f;  // Boost input signal
     float attenuation = 1.0f / (1.0f + amount);  // Output attenuation factor
     
+    // Determine distortion type based on character parameter
+    // character: 0.0-0.33 = hard clip, 0.33-0.66 = soft clip, 0.66-1.0 = wavefolder
     for (int i = 0; i < numSamples; i++) {
-        float x = input[i] * gain;
+        float x = input[i] ;
+        float p;
         
-        // Replace tanh approximation with x / (1 + |x|) soft clipping
-        float soft = x / (1.0f + std::abs(x));
+        // if (character < 0.33f) {
+            // Hard clipping
+            p = std::clamp(x* gain, -1.0f, 1.0f);
+        // } 
+        // else if (character < 0.66f) {
+        //     // Soft clipping (x / (1 + |x|))
+            // p = x / (1.0f + std::abs(x));
+        // }
+      
         
-        // Hard clipping with direct comparison
-        // float hard = std::clamp(x, -1.0f, 1.0f);
-        
-        // Blend between soft and hard clipping
-        // input[i] = (soft * (1.0f - character) + hard * character) * attenuation;
-        input[i] = soft * attenuation;
+        input[i] = amount * p * attenuation + (1.0f - amount) * x;
     }
 }

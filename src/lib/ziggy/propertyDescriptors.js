@@ -430,7 +430,7 @@ export const propertyDescriptors = [
 
     // Add these to the master section properties
     {
-        name: 'distortionAmount',
+        name: 'distortion',
         value: 0,
         min: 0,
         max: 1,

@@ -113,18 +113,18 @@ void PolySynth::noteOn(int m, float velocity) {
             v.gainRight = std::sin(angle);
 
             // Calculate appropriate mip levels before note on
-            float baseFreq = 440.0f * std::pow(2.0f, (m - 69) / 12.0f);
+            // float baseFreq = 440.0f * std::pow(2.0f, (m - 69) / 12.0f);
             
             // Calculate frequencies for all three oscillators
-            float freq1 = baseFreq * std::pow(2.0f, 
-                (properties["semi1"] + properties["cent1"] / 100.0f + 
-                 properties["oct1"] * 12.0f) / 12.0f);
-            float freq2 = baseFreq * std::pow(2.0f, 
-                (properties["semi2"] + properties["cent2"] / 100.0f + 
-                 properties["oct2"] * 12.0f) / 12.0f);
-            float freq3 = baseFreq * std::pow(2.0f, 
-                (properties["semi3"] + properties["cent3"] / 100.0f + 
-                 properties["oct3"] * 12.0f) / 12.0f);
+            // float freq1 = baseFreq * std::pow(2.0f, 
+            //     (properties["semi1"] + properties["cent1"] / 100.0f + 
+            //      properties["oct1"] * 12.0f) / 12.0f);
+            // float freq2 = baseFreq * std::pow(2.0f, 
+            //     (properties["semi2"] + properties["cent2"] / 100.0f + 
+            //      properties["oct2"] * 12.0f) / 12.0f);
+            // float freq3 = baseFreq * std::pow(2.0f, 
+            //     (properties["semi3"] + properties["cent3"] / 100.0f + 
+            //      properties["oct3"] * 12.0f) / 12.0f);
             
             // Select appropriate wavetables
             float wave1Key = properties["wave1"];

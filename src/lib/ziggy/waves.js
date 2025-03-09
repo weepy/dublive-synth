@@ -114,25 +114,27 @@ export const waves = [
     "url": "/waves/fav/rave.ogg",
     "tune": 0,
     "loop": 0
-  }
-]
-
-
-
-export const impacts = [
+  },
   {
-    "url": "/waves/fav/brown.ogg",
-    "tune": 0,
+    "url": "/waves/fav/piano-e1.ogg",
+    "tune": -4,
+    "loop": 0
+  },
+  {
+    "url": "/waves/fav/white.ogg",
+    "tune": -999,
     "loop": 1
   },
   {
-    "url": "/waves/fav/rave.ogg",
-    "tune": 0,
-    "loop": 0
+    "url": "/waves/fav/pink.ogg",
+    "tune": -999,
+    "loop": 1
+  },
+  {
+    "url": "/waves/fav/brown.ogg",
+    "tune": -999,
+    "loop": 1
   },
   
-  // "/waves/impact/clav.ogg",
-  // "/waves/impact/piano.ogg",
-  // "/waves/impact/rhodes.ogg",
-  // "/waves/fav/brown.ogg",
+  
 ]

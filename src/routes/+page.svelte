@@ -305,12 +305,12 @@
   
     function next(prop, _waves, dir = 1) {
         const currentUrl = currentPreset[prop];
-        const currentIndex = _waves.indexOf(currentUrl);
+        // Find the index of the wave object with matching URL
+        const currentIndex = _waves.findIndex(wave => wave.url === currentUrl);
         const newIndex = (currentIndex + dir + _waves.length) % _waves.length;
-        currentPreset[prop] = _waves[newIndex] || _waves[0];
+        currentPreset[prop] = _waves[newIndex]?.url || _waves[0].url;
 
-        currentPreset = currentPreset
-        // console.log(currentPreset[prop]);
+        currentPreset = currentPreset;
     }
 
     function savePatch(name) {
@@ -370,9 +370,9 @@
             <button class="tab-button" class:active={activeTab === 'modulation'} on:click={() => activeTab = 'modulation'}>
                 LFO
             </button>
-            <button class="tab-button" class:active={activeTab === 'noise'} on:click={() => activeTab = 'noise'}>
+            <!-- <button class="tab-button" class:active={activeTab === 'noise'} on:click={() => activeTab = 'noise'}>
                 NOISE
-            </button>
+            </button> -->
             <button class="tab-button" class:active={activeTab === 'master'} on:click={() => activeTab = 'master'}>
                 MASTER
             </button>
@@ -494,6 +494,16 @@
                            <input type="number" bind:value={currentPreset.cent3} min={-100} max={100} step={1} title="Cents">
                        </div>
                    </label>
+                   <label>
+                       Level:
+                       <input type="range" bind:value={currentPreset.wave3Level} min={0} max={1} step={0.001}>
+                       <span class="value-display">{(currentPreset.wave3Level ?? 0).toFixed(3)}</span>
+                   </label>
+                   <label>
+                       Decay:
+                       <input type="range" bind:value={currentPreset.wave3Decay} min={0} max={1} step={0.001}>
+                       <span class="value-display">{(currentPreset.wave3Decay ?? 0).toFixed(3)}</span>
+                   </label>
                    {/if}
                     <!-- <label>
                         Level:
@@ -517,11 +527,12 @@
                         <input type="range" bind:value={currentPreset.fmAmount} min={0} max={1} step={0.01}>
                         <span class="value-display">{(currentPreset.fmAmount ?? 0).toFixed(2)}</span>
                     </label>
-                    <label>
+                    <!-- Remove or comment out the wave3Mix control since we're now using wave3Level -->
+                    <!-- <label>
                         Wave 3 Mix:
                         <input type="range" bind:value={currentPreset.wave3Mix} min={0} max={1} step={0.001}>
                         <span class="value-display">{(currentPreset.wave3Mix ?? 0).toFixed(2)}</span>
-                    </label>
+                    </label> -->
                 </div>
             </div>
         {/if}
@@ -664,7 +675,7 @@
             </div>
         {/if}
 
-        {#if activeTab === 'noise'}
+        <!-- {#if activeTab === 'noise'}
             <div class="control-group">
                 <div class="group-controls">
                     <label>
@@ -672,14 +683,7 @@
                         <input type="range" bind:value={currentPreset.noiseLevel} min={0} max={1} step={0.001}>
                         <span class="value-display">{(currentPreset.noiseLevel ?? 0).toFixed(3)}</span>
                     </label>
-                    <!-- <h3>Noise</h3> -->
-                    <!-- <label>
-                        Enable:
-                        <select bind:value={currentPreset.noiseEnabled}>
-                            <option value={0}>Off</option>
-                            <option value={1}>On</option>
-                        </select>
-                    </label> -->
+                   
                     <label>
                         Decay:
                         <input type="range" bind:value={currentPreset.noiseDecay} min={0} max={1} step={0.001}>
@@ -693,7 +697,7 @@
                     
                 </div>
             </div>
-        {/if}
+        {/if} -->
 
         {#if activeTab === 'master'}
             <div class="control-group">
@@ -715,7 +719,7 @@
                     </label>
                     <label>
                         Gain:
-                        <input type="range" bind:value={currentPreset.masterGain} min={0} max={1} step={0.01}>
+                        <input type="range" bind:value={currentPreset.masterGain} min={0} max={1.2} step={0.01}>
                         <span class="value-display">{(currentPreset.masterGain ?? 0).toFixed(2)}</span>
                     </label>
                     <label>
@@ -724,8 +728,8 @@
                     </label>
                     <label>
                         Distortion:
-                        <input type="range" bind:value={currentPreset.distortionAmount} min={0} max={1} step={0.01}>
-                        <span class="value-display">{(currentPreset.distortionAmount ?? 0).toFixed(2)}</span>
+                        <input type="range" bind:value={currentPreset.distortion} min={0} max={1} step={0.01}>
+                        <span class="value-display">{(currentPreset.distortion ?? 0).toFixed(2)}</span>
                     </label>
                     <!-- <label>
                         Character:
