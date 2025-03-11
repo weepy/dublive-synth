@@ -11,13 +11,7 @@ Synth::Synth(float sampleRate, std::map<float, std::map<int, std::vector<float>>
 
     properties["filterKeyTracking"] = 1.0f;  // Add default value for key tracking
     
-    // Initialize frequency variables
-    currentFreq1 = 261.63f;
-    currentFreq2 = 261.63f;
-    currentFreq3 = 261.63f;
-    targetFreq1 = 261.63f;
-    targetFreq2 = 261.63f;
-    targetFreq3 = 261.63f;
+    // Initialize frequency variable
 }
 
 void Synth::processBuffer(float* buffer, int bufferSize) {
@@ -229,7 +223,7 @@ float Synth::processOscillator(const float* wavetableData, int wavetableSize, fl
     // Calculate playback rate relative to C4 (MIDI note 60)
     // For C4, we want to play at original speed (1 sample per step)
     // For other notes, we scale accordingly
-    float playbackRate = freq / 261.63f; // 261.63 Hz is C4
+    float playbackRate = freq ; // 261.63 Hz is C4
     
     // Update position (no longer using phase)
     pos += playbackRate;
@@ -260,12 +254,12 @@ float Synth::processOscillator(const float* wavetableData, int wavetableSize, fl
 float Synth::calculateFrequency(int midiNote, float semi, float cent, float oct, float tune) {
     // Special case: if tune is -999, return fixed frequency of 261.63 Hz (C4)
     if (tune == -999.0f) {
-        return 261.63f;
+        return 1.0f;
     }
     
     // Normal calculation
-    return 261.63f * std::pow(2.0f, 
-        (midiNote - 60 + semi + 
+    return  std::pow(2.0f, 
+        (midiNote - 24 + semi + 
          cent / 100.0f + 
          oct * 12.0f + 
          tune) / 12.0f);
