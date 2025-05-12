@@ -13,6 +13,51 @@ export default class Ziggy {
         // });
     }
 
+    static defaultProperties() {
+
+        return {
+            "wave1":"/plugins/ziggy/waves/add_waves/wave/color3.L.ogg",
+            "oct1":0,
+            "semi1":0,
+            "cent1":-3,
+            "wave2":"/plugins/ziggy/waves/add_waves/wave/color3.L.ogg",
+            "oct2":0,
+            "semi2":0,
+            "cent2":7,
+            "osc2Enabled":1,
+            "mix":0.5,
+            "fmAmount":0,
+            "filterType":0,
+            "cutoff":0.11,
+            "resonance":0.7,
+            "filterAttack":0.1,
+            "filterDecay":0.1,
+            "filterSustain":0.7,
+            "filterRelease":0.1,
+            "filterEnvAmount":0.5,
+            "ampAttack":0.01,
+            "ampDecay":0.1,
+            "ampSustain":0.7,
+            "ampRelease":0.1,
+            "lfoWaveform":0,
+            "lfoRetrigger":0,
+            "lfoRate":0.5,
+            "lfoAmount":0,
+            "lfoFadeIn":0,
+            "lfoDestination":0,
+            "portamento":0,
+            "autoPanWidth":0,
+            "autoPanRate":0.5,
+            "masterGain":0.5,
+            "polyphony":4,
+            "noiseDecay":0.1,
+            "noiseColor":1,
+            "noiseLevel":0
+        }
+
+
+    }
+
     async buildGraph() {
         // try {
             await this.audioContext.audioWorklet.addModule(ZiggyProcessor);
@@ -57,12 +102,12 @@ export default class Ziggy {
 
     }
 
-    async sendProperties() {
-        this.synthNode.port.postMessage({
-            type: 'properties',
-            properties: this.properties
-        });
-    }
+    // async sendProperties() {
+    //     this.synthNode.port.postMessage({
+    //         type: 'properties',
+    //         properties: this.properties
+    //     });
+    // }
 
     async preloadAudio(url) {
         if (this.audioCache.has(url)) {
@@ -104,9 +149,9 @@ export default class Ziggy {
         if (!this.synthNode) return;
 
         const wavetable = await this.preloadAudio(url);
-        // Create a copy of the wavetable for transfer
+        
         const wavetableCopy = new Float32Array(wavetable);
-        // const wavetableCopy = this.audioCache.get(url);
+        
         
         this.synthNode.port.postMessage({
             type: 'loadwavetable',

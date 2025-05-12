@@ -53,9 +53,12 @@
 
     async function init() {
         audioContext = new AudioContext();
-        synth = new Ziggy(currentPreset, { audioContext });
+        synth = new Ziggy({}, { audioContext });
         await synth.buildGraph();
-        synth.handleUpdate(currentPreset);
+
+        const preset = { ...Ziggy.defaultProperties(), ...currentPreset };
+
+        synth.handleUpdate(preset);
 
     }
 
