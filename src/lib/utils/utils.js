@@ -21,10 +21,7 @@ export async function decodeAudioDataAny(contentType, data, audioContext) {
             console.log("using ogg polyfill")
         }
         const buffer = await decodeOggDataPolyfill.decodeOggData(data)
-
-
-        return buffer
-        
+        return buffer   
     }
 
     if(nativeDecodeOgg) {

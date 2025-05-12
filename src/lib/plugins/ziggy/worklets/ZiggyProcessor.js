@@ -19,7 +19,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
   module.exports.default = Module;
 } else if (typeof define === 'function' && define['amd'])
   define([], () => Module);
-class SynthProcessor extends AudioWorkletProcessor {
+class ZiggyProcessor extends AudioWorkletProcessor {
     constructor() {
         super();
 
@@ -118,7 +118,7 @@ class SynthProcessor extends AudioWorkletProcessor {
     }
 }
 
-registerProcessor('synth-processor', SynthProcessor);
+registerProcessor('ZiggyProcessor', ZiggyProcessor);
 
 function generateTriangleWave(size = 2048) {
     const wave = new Float32Array(size);

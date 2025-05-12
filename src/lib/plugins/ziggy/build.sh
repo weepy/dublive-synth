@@ -8,7 +8,7 @@ fi
 
 # NOTE `-std`: To use modern c++11 features like std::tuple and std::vector,
 # we need to enable C++ 11 by passing the parameter to gcc through emcc.
-emcc src/cpp/*.cpp \
+emcc cpp/*.cpp \
   -std=c++17 \
   -O3 \
   -s WASM=1 \
@@ -24,8 +24,8 @@ emcc src/cpp/*.cpp \
 # NOTE: We concate the emscripten generated js and wasm file with the worklet
 # such that we don't have to import it later as an es6 module. This
 # achieves better cross-browser compatibility.
-mkdir -p static/worklets
-cat $DIR/main.js src/lib/worklets/synth_worklet.js > static/worklets/synth_worklet.js
+# mkdir -p static/worklets
+cat $DIR/main.js worklets/ziggy_worklet_class.js > worklets/ZiggyProcessor.js
 
 
 
